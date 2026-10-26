@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { applyAuthoritativeLocalProvider } from './vite.config.ts';
+import { applyAuthoritativeLocalProvider } from './local-provider-env.ts';
 
 const inherited = { LLM_PROVIDER: 'openai' };
 applyAuthoritativeLocalProvider(

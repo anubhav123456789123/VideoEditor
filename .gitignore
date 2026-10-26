@@ -107,3 +107,7 @@ public/whisper-cli/
 
 # Agent tooling local state (Command Code taste captures)
 .commandcode/
+
+# Next.js
+.next/
+next-env.d.ts

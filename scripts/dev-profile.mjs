@@ -266,9 +266,9 @@ async function runProfileCommand(profile, command, args) {
   });
 }
 
-async function runVite(profile, args) {
-  const viteCli = fileURLToPath(new URL('../node_modules/vite/bin/vite.js', import.meta.url));
-  return runProfileCommand(profile, process.execPath, [viteCli, '--config', 'config/vite.config.ts', ...args]);
+async function runHost(profile, args) {
+  const tsxCli = fileURLToPath(new URL('../node_modules/tsx/dist/cli.mjs', import.meta.url));
+  return runProfileCommand(profile, process.execPath, [tsxCli, 'server/next-host.ts', ...args]);
 }
 
 async function main() {
@@ -280,7 +280,7 @@ async function main() {
     process.exitCode = await runProfileCommand(profile, command, args.slice(2));
     return;
   }
-  process.exitCode = await runVite(profile, args);
+  process.exitCode = await runHost(profile, args);
 }
 
 const entryPath = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : '';
