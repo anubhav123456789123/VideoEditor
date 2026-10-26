@@ -5,6 +5,7 @@ import type { MediaAsset } from '../../editor/types';
 import { prepareTemplate } from '../../template-host';
 import { generateAgentText } from '../client';
 import { designStyleHint } from '../systemPrompt';
+import { remotionMgSystemPrompt, stripCodeFence } from '../../../shared/mg-prompts';
 import { execCoreDataTool } from './core-data-tools';
 import { execJianyingExport } from './jianying-export-tool';
 
@@ -73,16 +74,8 @@ function execTemplateCatalog(name: string, args: Args, ctx: AgentContext): unkno
 }
 
 async function generateMgCode(description: string, brandHint = ''): Promise<string> {
-  const system = `You write ONE Remotion motion-graphic React component. Output ONLY the code — no markdown fences, no prose.
-Contract (MUST follow exactly):
-- Shape: const Name = ({item}) => { ...; return (<AbsoluteFill>...</AbsoluteFill>); };
-- NO import / require / export. These globals are already injected: React, useCurrentFrame, useVideoConfig, interpolate, interpolateColors, spring, Easing, random, Img, Audio, Sequence, AbsoluteFill.
-- Canvas is 1920x1080. Animate with useCurrentFrame()+interpolate()/spring({fps,frame,config}). Get { fps, durationInFrames } from useVideoConfig().
-- interpolate()'s inputRange MUST be strictly increasing (e.g. [0, 15, 30]). When breakpoints are computed (per-item offsets, durationInFrames fractions), clamp with Math.max(prev + 1, next) so a later value can never be <= an earlier one — a non-monotonic inputRange throws at render time.
-- Pure, synchronous rendering only. FORBIDDEN: fetch, XMLHttpRequest, WebSocket, document, window, globalThis, eval, new Function, .constructor, localStorage, setTimeout, setInterval, while(true), for(;;), debugger.
-- Style inline. Make it clean and visually appealing (large readable text, tasteful colors, smooth fade/slide/scale animations).${brandHint}`;
-  const result = await generateAgentText({ maxOutputTokens: 64000, system, prompt: description });
-  return result.trim().replace(/^\s*```[a-zA-Z]*\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+  const result = await generateAgentText({ maxOutputTokens: 64000, system: remotionMgSystemPrompt(brandHint), prompt: description });
+  return stripCodeFence(result);
 }
 
 // Upper bounds mirror the tool schemas. The preview allocates a canvas and a

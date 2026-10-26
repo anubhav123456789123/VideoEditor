@@ -43,6 +43,7 @@ import { llmProxyPlugin } from "./llm-proxy.ts";
 import { agentRunsPlugin } from "../agent-runs/routes.ts";
 import { localMediaPlugin } from "./local-media.ts";
 import { resourcePreviewPlugin } from "./resource-preview.ts";
+import { motionGraphicsPlugin } from "./motion-graphics.ts";
 import { getKey } from "../keystore.ts";
 
 import { installSystemProxy } from '../net.ts';
@@ -92,6 +93,7 @@ export function serverPlugins(options: { projectStoreHttp?: boolean } = {}): Plu
     isolateVoicePlugin(),
     normalizeMediaPlugin(),
     probeMediaPlugin(),
+    motionGraphicsPlugin(),
     generationProgressPlugin(),
     subtitleExportPlugin(),
     stockSearchPlugin({

@@ -120,7 +120,8 @@ html, body { overflow: hidden; }
   100% { box-shadow: 0 0 0 0 rgba(var(--cc-accent-rgb), 0); opacity: 1; }
 }
 
-button, input, select { font: inherit; }
+/* Layered so Tailwind utilities (shadcn components) can set font sizes; same effect as preflight. */
+@layer base { button, input, select { font: inherit; } }
 
 .cc-timeline-hover-guide {
   position:absolute; top:0; width:1px; z-index:12; pointer-events:none;
@@ -300,6 +301,8 @@ button, input, select { font: inherit; }
 .cc-chat-brand { min-width:0; flex:1; display:flex; align-items:center; gap:8px; }
 .cc-chat-brand-copy { min-width:0; display:flex; flex-direction:column; color:var(--cc-text); line-height:1.15; }
 .cc-chat-brand-copy small { margin-top:2px; color:var(--cc-text-dim); font-size:9.5px; }
+.cc-chat-brand-copy strong { font-size:13px; font-weight:600; letter-spacing:-0.1px; }
+.cc-chat-brand-mark { width:22px; height:22px; flex:0 0 22px; border-radius:6px; object-fit:contain; }
 .cc-chat-collapsed-brand { writing-mode:vertical-rl; color:var(--cc-text-dim); font-size:10px; letter-spacing:1.5px; }
 @container chat-panel (max-width:220px) {
   .cc-chat-header { gap:4px; padding-inline:8px; }
@@ -317,7 +320,7 @@ button, input, select { font: inherit; }
 .cc-chat-starter-list button { min-width:0; min-height:52px; display:flex; align-items:center; gap:10px; padding:7px 4px; overflow:hidden; border:0; border-bottom:0.5px solid var(--cc-border); border-radius:0; background:transparent; color:var(--cc-text); cursor:pointer; text-align:left; }
 .cc-chat-starter-list button:hover { background:rgba(var(--cc-ink-rgb),0.035); }
 .cc-chat-starter-list button:focus-visible { outline:1px solid var(--cc-accent); outline-offset:-1px; }
-.cc-chat-starter-icon { width:30px; height:30px; flex:0 0 30px; display:grid; place-items:center; border-radius:4px; background:var(--cc-panel-alt); color:var(--cc-text-muted); transition:background-color 160ms ease-out,color 160ms ease-out; }
+.cc-chat-starter-icon { width:30px; height:30px; flex:0 0 30px; display:grid; place-items:center; border-radius:8px; background:var(--cc-panel-alt); color:var(--cc-text-muted); transition:background-color 160ms ease-out,color 160ms ease-out; }
 .cc-chat-starter-list button:hover .cc-chat-starter-icon { background:rgba(var(--cc-accent-rgb),0.14); color:var(--cc-accent); }
 .cc-chat-starter-copy { min-width:0; flex:1; display:flex; flex-direction:column; gap:3px; }
 .cc-chat-starter-copy strong { overflow:hidden; font-size:12.5px; font-weight:600; line-height:16px; text-overflow:ellipsis; white-space:nowrap; }

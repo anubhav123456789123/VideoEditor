@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1920, height=1080" />
+<title>Kinetic headline</title>
+<script src="gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+  .clip { position: absolute; inset: 0; visibility: hidden; }
+  #headline { display: flex; align-items: center; justify-content: center; gap: 28px; }
+  .word { display: inline-block; font: 800 128px/1 -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif; letter-spacing: -4px; color: #ffffff; opacity: 0; text-shadow: 0 6px 40px rgba(0,0,0,0.35); }
+  #rule { position: absolute; left: 700px; top: 640px; width: 520px; height: 6px; background: #ffffff; border-radius: 3px; transform-origin: center; }
+</style>
+</head>
+<body>
+<div id="stage" data-composition-id="mg" data-width="1920" data-height="1080">
+  <div id="headline" class="clip" data-start="0" data-duration="4" data-track-index="1">
+    <span class="word">Make</span><span class="word">it</span><span class="word">simple.</span>
+  </div>
+  <div id="rule-wrap" class="clip" data-start="0" data-duration="4" data-track-index="0"><div id="rule"></div></div>
+</div>
+<script>
+  var tl = gsap.timeline({ paused: true });
+  tl.set("#rule", { scaleX: 0 }, 0);
+  tl.fromTo(".word", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out", stagger: 0.12 }, 0.2);
+  tl.to("#rule", { scaleX: 1, duration: 0.8, ease: "expo.out" }, 0.6);
+  tl.to(".word", { y: -40, opacity: 0, duration: 0.5, ease: "power2.in", stagger: 0.06 }, 3.2);
+  tl.to("#rule", { scaleX: 0, duration: 0.4, ease: "power2.in" }, 3.4);
+  tl.set({}, {}, 4);
+  window.__timelines = window.__timelines || {};
+  window.__timelines["mg"] = tl;
+</script>
+</body>
+</html>

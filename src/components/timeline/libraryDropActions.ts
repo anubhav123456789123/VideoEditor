@@ -14,6 +14,8 @@ import { customTransitionUniforms, getCustomTransition } from '../../gl/customTr
 import { ALL_FX, serializableDefsFor } from '../../gl/fx/effects';
 import { TEMPLATES } from '../../editor/initial';
 import { t } from '../../i18n/locale';
+import { renderHyperframes } from '../../library/localAssets';
+import { importUploadedMedia } from '../../media/mobileImport';
 import { isIsolateAudioFxId, strengthFromAudioFxId } from '../../audio/isolateVoice';
 import { showAppToast } from '../../ui/appToast';
 
@@ -122,7 +124,7 @@ export function applyLibraryToClip({ state, commands, notice, getState, getAsset
 }
 
 export function applyLibraryToTrack(
-  { state, commands }: DropCtx,
+  { state, commands, notice }: DropCtx,
   payload: LibraryDragPayload,
   trackId: TrackId,
   startFrame: number,
@@ -142,7 +144,7 @@ export function applyLibraryToTrack(
       {
         id: `sfx_${payload.id}`,
         name: payload.name,
-        category: 'sfx',
+        category: payload.category === 'music' ? 'music' : 'sfx',
         src: payload.src ?? `/sound-effects/${payload.id}.mp3`,
         durationInFrames: dur,
       },
@@ -160,6 +162,26 @@ export function applyLibraryToTrack(
       t = trackIds.find((id) => trackKind(state, id) === 'video') ?? defaultTrackId(state, 'video') ?? trackId;
     }
     commands.addMotionGraphic(tpl, { track: t, startFrame, ripple, overwrite });
+    return true;
+  }
+  if (payload.kind === 'hyperframes') {
+    // HyperFrames compositions are rendered to a transparent video first, then placed like media.
+    const track = trackKind(state, trackId) === 'video'
+      ? trackId
+      : trackIds.find((id) => trackKind(state, id) === 'video') ?? defaultTrackId(state, 'video') ?? trackId;
+    notice(t('正在渲染「{name}」…', { name: payload.name }));
+    void renderHyperframes({ id: payload.id, name: payload.name, fps: state.fps })
+      .then((record) => importUploadedMedia(record, state.fps))
+      .then((asset) => {
+        commands.addAsset(asset, state.fps);
+        commands.addMediaItem(asset, { track, startFrame, ripple, overwrite });
+        showAppToast(t('已添加「{name}」', { name: payload.name }));
+      })
+      .catch((error: unknown) => {
+        const msg = `${t('渲染失败')}：${error instanceof Error ? error.message : String(error)}`;
+        showAppToast(msg, { error: true });
+        notice(msg);
+      });
     return true;
   }
   return false;

@@ -49,10 +49,11 @@ The video preview canvas. Shows a live preview of the timeline at the current pl
 Tabs that share one panel group (separate from the AI panel):
 
 - **My Assets** (ZH: "素材库") — The user's media pool. Shows uploaded, recorded, imported, and generated media. Users can drag assets from here onto the timeline. The **Upload** button opens local file / folder import.
-  - **Generation progress:** When AI generation tasks (video, image, music, etc.) are in progress, they appear in My Assets with a progress indicator. This is where users can check if a generation is still running or has completed.
-  - **Generation failures:** If a generation fails, My Assets shows a failure status on the asset card. The user can ask the AI to regenerate.
+  - **Render progress:** Exports and rendered motion graphics show progress here until the file is ready.
   - **Bins:** Users can create bins/folders to organize assets.
 - **Library** — Built-in presets/effects/assets that can be browsed separately from the user's own assets.
+- **Assets** (ZH: "本地素材") — The local asset library: files in the project folders `assets/sfx`, `assets/music`, `assets/transitions` and `assets/motion-graphics`. Sub-tabs Sound Effects / Music / Transitions / MG. Click a card to add it at the playhead (transitions apply to the selected clip) or drag it onto the timeline. Dropping new files into those folders and pressing refresh makes them appear. Agent access: local audio is `browse_library category=sound-effects group=local-sfx|local-music` (assetId `library:sound:local/<path>`), local transitions appear in `browse_library category=transitions`, local Remotion MGs appear in `browse_library category=motion-graphics` (category 本地素材). HyperFrames (.html) MGs are rendered to a transparent video when added from this tab.
+- **Motion Graphics** (ZH: "动态图形") — Describe a graphic and Claude writes it. Two engines: **Remotion** (an editable MG clip, same as `create_motion_graphic`) and **HyperFrames** (HeyGen's HTML + GSAP compositions, rendered to a transparent ProRes video). Preview, then **Insert into timeline** or **Save to Assets** (`assets/motion-graphics/generated`). Writing a revision in the prompt box refines the current result.
 - **Templates** — Template browser when enabled.
 - **Transcript** (ZH: "文字稿" / ES: "Transcripción") — A text-based editing panel for talking head / interview footage. Users edit the video by editing text:
   - Select and delete unwanted words/sentences to remove them from the timeline.

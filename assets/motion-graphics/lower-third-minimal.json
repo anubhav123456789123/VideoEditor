@@ -1,0 +1,10 @@
+{
+  "name": "Minimal lower third",
+  "description": "Name and role with a growing rule; transparent overlay.",
+  "durationInFrames": 150,
+  "props": {
+    "name": "Alex Morgan",
+    "role": "Product Designer",
+    "accent": "#ffffff"
+  }
+}

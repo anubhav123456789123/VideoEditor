@@ -12,7 +12,8 @@ export type LibraryDragKind =
   | 'zoom'
   | 'sound'
   | 'template'
-  | 'audio-fx';
+  | 'audio-fx'
+  | 'hyperframes';
 
 export interface LibraryDragPayload {
   v: 1;
@@ -23,6 +24,8 @@ export interface LibraryDragPayload {
   src?: string;
   /** sound: duration in seconds */
   seconds?: number;
+  /** sound: library category of the dropped audio (default sfx) */
+  category?: 'sfx' | 'music';
   /** Application data of plugin entries (zoom envelope/transition frag/MG template), self-contained parsing on the drop side,
    * No need to check the plugin library. The receiving end verifies the shape before use (drag-and-drop JSON is regarded as untrusted input). */
   data?: unknown;
@@ -81,5 +84,6 @@ export function libraryDragLabel(kind: LibraryDragKind): string {
     case 'sound': return t('音效');
     case 'template': return 'MG';
     case 'audio-fx': return t('音频效果');
+    case 'hyperframes': return 'HyperFrames';
   }
 }

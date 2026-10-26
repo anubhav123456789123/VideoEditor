@@ -27,6 +27,7 @@ import {
   shouldCoerceEffectUpdateToClip,
   stripEffectLocators,
 } from './edit-item-fields';
+import { audioSeconds, localAudioEntry } from '../../library/localAssets';
 import {
   cleanOverrides,
   envelopeFrom,
@@ -265,7 +266,11 @@ function validateAudioAdd(ctx: AgentContext, entry: Entry): OpResult {
   const assetId = String(entry.assetId ?? '');
   const match = /^library:sound:(.+)$/.exec(assetId);
   if (!match) return { error: 'audio add expects library:sound:<id>', got: assetId };
-  const sound = SOUND_EFFECTS.find((entry) => entry.id === match[1]);
+  const local = match[1]!.startsWith('local/') ? localAudioEntry(match[1]!.slice('local/'.length)) : undefined;
+  const builtin = SOUND_EFFECTS.find((entry) => entry.id === match[1]);
+  const sound = builtin
+    ? { id: builtin.id, name: builtin.name, src: soundEffectSrc(builtin.id), seconds: builtin.seconds }
+    : local ? { id: `local_${local.id}`, name: local.name, src: local.url, seconds: audioSeconds(local) } : null;
   if (!sound) return { error: `unknown sound ${match[1]}` };
   const state = ctx.getState();
   const requestedTrack = entry.track ?? entry.trackId ?? 'A1';
@@ -282,7 +287,7 @@ function validateAudioAdd(ctx: AgentContext, entry: Entry): OpResult {
     : typeof entry.startFrame === 'number' ? entry.startFrame : undefined;
   return {
     ok: true, kind: 'audio', plan: 'addAudio', sfxId: sound.id, name: sound.name,
-    src: soundEffectSrc(sound.id), durationInFrames: Math.max(1, Math.round(sound.seconds * state.fps)),
+    src: sound.src, durationInFrames: Math.max(1, Math.round(sound.seconds * state.fps)),
     startFrame, track,
   };
 }

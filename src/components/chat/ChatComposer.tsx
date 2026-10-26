@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { theme } from '../../theme';
+import { theme, themeAlpha } from '../../theme';
 import { localizedCatalogText, useT } from '../../i18n/locale';
 import { Icon, type IconName } from '../icons';
 import { MenuDrillHeader } from '../timeline/MenuDrillHeader';
@@ -309,10 +309,10 @@ export function ChatComposer(props: ChatComposerProps) {
         position: 'relative', display: 'flex', flexDirection: 'column',
         height: shellH, minHeight: COMPOSER_H_MIN, maxHeight: COMPOSER_H_MAX,
         width: '100%', minWidth: 0, maxWidth: '100%', overflow: 'visible',
-        boxSizing: 'border-box', background: theme.panelAlt,
-    border: `0.5px solid ${theme.borderLight}`, borderRadius: 4,
+        boxSizing: 'border-box', background: theme.panel,
+        border: `0.5px solid ${theme.border}`, borderRadius: 14,
         padding: '10px 6px 5px',
-        boxShadow: editorDragOver ? `inset 0 0 0 1px ${theme.accent}` : undefined,
+        boxShadow: editorDragOver ? `inset 0 0 0 1px ${theme.accent}` : `0 1px 2px ${themeAlpha.shadow(0.04)}, 0 4px 16px ${themeAlpha.shadow(0.05)}`,
         transition: 'box-shadow 120ms ease',
       }}
     >

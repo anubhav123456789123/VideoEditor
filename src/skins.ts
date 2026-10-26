@@ -50,7 +50,7 @@ export interface SkinDef {
   tokens: SkinTokens;
 }
 
-// Graphite = default skin (consistent with the look and feel before the skin-changing system was implemented).
+// Graphite = the original default skin (the look and feel before the skin-changing system was implemented).
 const GRAPHITE: SkinTokens = {
   bg: '#101010', inset: '#141414', panel: '#181818', panelAlt: '#212121', hover: '#2c2c2c',
   border: '#363636', borderLight: '#4a4a4a',
@@ -70,7 +70,36 @@ const GRAPHITE: SkinTokens = {
 // success is **semantic color**, unified across skins (inherited from graphite); text comparison text/panel ≥ 7,
 // textDim/panel ≥ 4.5, onAccent/accent ≥ 4.5 (script skin-by-skin assertion, individual official grayscale
 // Fine-tune L to meet the standard). Pastel accent skin (Mocha/Arctic/Tokyo Night/Latte) onAccent uses dark fonts.
+// Paper / Onyx: monochrome Apple-like skins (white · grey · black). The UI is
+// greyscale; only success/danger keep a hue because they carry meaning, and clip
+// kinds are told apart by tone instead of colour. Paper is the default.
+const PAPER: SkinTokens = {
+  bg: '#f5f5f7', inset: '#ececee', panel: '#ffffff', panelAlt: '#f5f5f7', hover: '#e8e8ed',
+  border: '#d2d2d7', borderLight: '#aeaeb2',
+  text: '#1d1d1f', textMuted: '#424245', textDim: '#6e6e73', textStrong: '#000000',
+  accent: '#1d1d1f', accentDeep: '#000000', accentRgb: '29,29,31', onAccent: '#ffffff',
+  inkRgb: '29,29,31', shadowRgb: '0,0,0', colorScheme: 'light',
+  gold: '#6e6e73', select: '#1d1d1f', success: '#248a3d', danger: '#d70015',
+  tlTrack: '#ececee', tlSidePanel: '#f5f5f7',
+  trackVideo: '#1d1d1f', trackAudioA1: '#48484a', trackAudioA2: '#636366', trackCaption: '#3a3a3c',
+  clipVideo: '#3a3a3c', clipAudio: '#c7c7cc', clipMg: '#1d1d1f', clipText: '#545458',
+};
+
+const ONYX: SkinTokens = {
+  bg: '#000000', inset: '#0a0a0a', panel: '#111111', panelAlt: '#1c1c1e', hover: '#2c2c2e',
+  border: '#2c2c2e', borderLight: '#48484a',
+  text: '#f5f5f7', textMuted: '#c7c7cc', textDim: '#8e8e93', textStrong: '#ffffff',
+  accent: '#f5f5f7', accentDeep: '#d1d1d6', accentRgb: '245,245,247', onAccent: '#000000',
+  inkRgb: '255,255,255', shadowRgb: '0,0,0', colorScheme: 'dark',
+  gold: '#aeaeb2', select: '#f5f5f7', success: '#30d158', danger: '#ff453a',
+  tlTrack: '#161618', tlSidePanel: '#111111',
+  trackVideo: '#f5f5f7', trackAudioA1: '#aeaeb2', trackAudioA2: '#8e8e93', trackCaption: '#c7c7cc',
+  clipVideo: '#48484a', clipAudio: '#aeaeb2', clipMg: '#636366', clipText: '#545458',
+};
+
 export const SKINS: readonly SkinDef[] = [
+  { id: 'paper', nameZh: '纸白', tokens: PAPER },
+  { id: 'onyx', nameZh: '玄黑', tokens: ONYX },
   { id: 'graphite', nameZh: '石墨', tokens: GRAPHITE },
   {
     id: 'midnight', nameZh: '墨黑',
@@ -139,7 +168,7 @@ export const SKINS: readonly SkinDef[] = [
 ];
 
 const STORAGE_KEY = 'cc.skin';
-export const DEFAULT_SKIN = 'graphite';
+export const DEFAULT_SKIN = 'paper';
 
 const kebab = (name: string): string => name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 

@@ -1,0 +1,11 @@
+{
+  "name": "Clean title card",
+  "description": "Full-screen title and subtitle on a solid background.",
+  "durationInFrames": 120,
+  "props": {
+    "title": "Think different.",
+    "subtitle": "A short film",
+    "background": "#000000",
+    "color": "#f5f5f7"
+  }
+}

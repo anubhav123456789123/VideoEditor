@@ -15,6 +15,7 @@ import { CUSTOM_FX, FX_EFFECTS, FX_IDS, LUT_EFFECTS, LUT_IDS } from '../../gl/fx
 import { listCustomTransitions } from '../../gl/customTransitions';
 import { listCustomZooms } from '../../editor/customZooms';
 import type { Tpl } from '../../types';
+import { audioSeconds, localLibrarySnapshot } from '../../library/localAssets';
 import {
   AUDIO_FX_ISOLATE_DEFAULT,
   AUDIO_FX_ISOLATE_LIGHT,
@@ -164,6 +165,19 @@ export function buildLibraryItems(templates: Tpl[]): LibraryItem[] {
       description: s.desc,
       group: s.group,
       usage: `edit_item adds:[{type:"audio",assetId:"library:sound:${s.id}",fromFrame:<anchor>}]`,
+    });
+  }
+
+  // Local library audio (assets/sfx, assets/music); loaded by the editor at startup.
+  const { library } = localLibrarySnapshot();
+  for (const entry of [...library.sfx, ...library.music]) {
+    items.push({
+      id: `library:sound:local/${entry.id}`,
+      name: entry.name,
+      category: 'sound-effects',
+      description: `${entry.kind === 'music' ? 'Local music bed' : 'Local sound effect'} (${audioSeconds(entry).toFixed(1)}s)`,
+      group: entry.kind === 'music' ? 'local-music' : `local-sfx${entry.category ? `/${entry.category}` : ''}`,
+      usage: `edit_item adds:[{type:"audio",assetId:"library:sound:local/${entry.id}",fromFrame:<anchor>}]`,
     });
   }
 

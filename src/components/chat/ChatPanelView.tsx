@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { theme } from '../../theme';
-import { BrandMark, Icon, OpenChatCutWordmark } from '../icons';
+import { Icon } from '../icons';
+import claudeSvg from '../../../assets/vendor-icons/claude-color.svg';
 import { AgentChangeLogMenu } from './AgentChangeLogMenu';
 import { AgentRunInspector } from './AgentRunInspector';
 import { ChatComposer } from './ChatComposer';
@@ -51,10 +52,10 @@ function ChatHeader({ controller }: { controller: ChatPanelController }) {
   const { props, t, agent } = controller;
   return <div className="cc-chat-header">
     <div className="cc-chat-brand">
-      <BrandMark size={20} />
+      <img className="cc-chat-brand-mark" src={claudeSvg} alt="" aria-hidden />
       <span className="cc-chat-brand-copy">
-        <OpenChatCutWordmark width={102} />
-        <small>{t('Agent 工作台')}</small>
+        <strong>Claude</strong>
+        <small>{t('剪辑助手')}</small>
       </span>
     </div>
     <AgentRunInspector projectId={props.projectId} />

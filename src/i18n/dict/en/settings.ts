@@ -422,6 +422,8 @@ export default {
   // ── SkinPicker (skin photo official theme name) ──
   '皮肤': 'Skin',
   '石墨': 'Graphite',
+  '纸白': 'Paper',
+  '玄黑': 'Onyx',
   '墨黑': 'Midnight',
   '摩卡': 'Mocha',
   '北极': 'Nord',

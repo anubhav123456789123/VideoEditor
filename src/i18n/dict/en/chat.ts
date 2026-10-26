@@ -9,6 +9,7 @@ export default {
   'Agent 仍在运行中，无法清空对话。请先等待运行结束或停止当前运行，再试一次。':
     'The Agent is still running and the chat cannot be cleared. Wait for the run to finish or stop it first, then try again.',
   'Agent 工作台': 'Agent workspace',
+  '剪辑助手': 'Editing assistant',
   '聊天滚动快捷操作': 'Chat scroll shortcuts',
   '快速到顶部': 'Jump to top',
   '快速到底部': 'Jump to bottom',

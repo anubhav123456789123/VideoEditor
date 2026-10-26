@@ -4,6 +4,7 @@ import type { AgentContext } from '../agent/context';
 import { AUDIO_ASSETS } from '../audio/library';
 import { pluginTemplates } from '../library/pluginTemplateCatalog';
 import { usePluginPacks } from '../library/pluginResources';
+import { useLocalLibrary } from '../library/useLocalLibrary';
 import { useOfflineMedia } from '../media/useOfflineMedia';
 import { loadCreativeMode, saveCreativeMode } from '../persist/projectStore';
 import { loadChatAutoApply } from '../persist/sessionPrefs';
@@ -65,10 +66,13 @@ function useSelectedPreviewStatuses(selectedItemId?: string, selectedTransitionI
 
 function useAllTemplates() {
   const pluginPacks = usePluginPacks();
-  const allTemplates = useMemo(
-    () => (pluginPacks.length ? [...TEMPLATES, ...pluginTemplates(pluginPacks)] : TEMPLATES),
-    [pluginPacks],
-  );
+  // Remotion MGs from assets/motion-graphics join the catalog so the agent can browse and place them.
+  const { templates: localTemplates } = useLocalLibrary();
+  const allTemplates = useMemo(() => {
+    const local = Object.values(localTemplates);
+    if (!pluginPacks.length && !local.length) return TEMPLATES;
+    return [...TEMPLATES, ...pluginTemplates(pluginPacks), ...local];
+  }, [pluginPacks, localTemplates]);
   const allTemplatesRef = useLiveRef(allTemplates);
   return { allTemplates, allTemplatesRef };
 }

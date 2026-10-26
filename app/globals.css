@@ -1,1 +1,29 @@
 @import "tailwindcss";
+
+/* shadcn/ui tokens resolve to the editor skin variables (src/skins.ts), so the
+   new Tailwind components follow whichever skin is active. */
+@theme inline {
+  --color-background: var(--cc-panel);
+  --color-foreground: var(--cc-text);
+  --color-card: var(--cc-panel-alt);
+  --color-card-foreground: var(--cc-text);
+  --color-popover: var(--cc-panel);
+  --color-popover-foreground: var(--cc-text);
+  --color-primary: var(--cc-accent);
+  --color-primary-foreground: var(--cc-on-accent);
+  --color-secondary: var(--cc-panel-alt);
+  --color-secondary-foreground: var(--cc-text);
+  --color-muted: var(--cc-panel-alt);
+  --color-muted-foreground: var(--cc-text-dim);
+  --color-accent: var(--cc-hover);
+  --color-accent-foreground: var(--cc-text-strong);
+  --color-destructive: var(--cc-danger);
+  --color-border: var(--cc-border);
+  --color-input: var(--cc-border);
+  --color-ring: var(--cc-accent);
+  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}

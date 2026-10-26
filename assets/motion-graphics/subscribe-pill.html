@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1920, height=1080" />
+<title>Subscribe pill</title>
+<script src="gsap.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+  .clip { position: absolute; inset: 0; visibility: hidden; }
+  #pill { position: absolute; right: 120px; bottom: 120px; display: flex; align-items: center; gap: 22px; padding: 22px 36px 22px 24px; border-radius: 999px; background: #ffffff; box-shadow: 0 18px 50px rgba(0,0,0,0.25); transform-origin: right center; }
+  #dot { width: 56px; height: 56px; border-radius: 50%; background: #1d1d1f; }
+  #label { font: 700 44px/1 -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif; color: #1d1d1f; letter-spacing: -0.5px; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="stage" data-composition-id="mg" data-width="1920" data-height="1080">
+  <div id="pill-wrap" class="clip" data-start="0" data-duration="3.5" data-track-index="0">
+    <div id="pill"><div id="dot"></div><div id="label">Subscribe</div></div>
+  </div>
+</div>
+<script>
+  var tl = gsap.timeline({ paused: true });
+  tl.fromTo("#pill", { scale: 0.6, opacity: 0, x: 40 }, { scale: 1, opacity: 1, x: 0, duration: 0.6, ease: "back.out(1.6)" }, 0.1);
+  tl.fromTo("#dot", { scale: 0 }, { scale: 1, duration: 0.4, ease: "power3.out" }, 0.4);
+  tl.to("#dot", { scale: 0.85, duration: 0.15, yoyo: true, repeat: 1, ease: "power1.inOut" }, 1.6);
+  tl.to("#pill", { scale: 0.7, opacity: 0, x: 40, duration: 0.4, ease: "power2.in" }, 3);
+  tl.set({}, {}, 3.5);
+  window.__timelines = window.__timelines || {};
+  window.__timelines["mg"] = tl;
+</script>
+</body>
+</html>

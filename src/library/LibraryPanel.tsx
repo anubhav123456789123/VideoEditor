@@ -32,6 +32,9 @@ import { customTransitionUniforms, getCustomTransition } from '../gl/customTrans
 import type { ZoomEffect } from '../editor/types';
 import { Icon } from '../components/icons';
 import { parseSrt } from '../captions/srt';
+import { AssetLibraryBrowser } from './AssetLibraryBrowser';
+import { MotionGraphicsStudio } from './MotionGraphicsStudio';
+import { importUploadedMedia } from '../media/mobileImport';
 
 // Two built-in LUTs implemented with published camera-log transfer functions.
 // They apply through the same pipeline as other effects.
@@ -56,6 +59,9 @@ interface LibraryPanelProps {
   onAddAudio: (asset: AudioAsset) => void;
   playerRef: RefObject<PlayerRef | null>;
   fps: number;
+  /** Project canvas size (Motion Graphics tab renders at this size). */
+  projectWidth: number;
+  projectHeight: number;
   items: TimelineItem[];
   getSequenceOptions: () => SequenceLibraryOption[];
   onAddSequence: (timelineId: string) => void;
@@ -119,13 +125,13 @@ interface LibraryPanelProps {
   onApplyZoom: (zoom: ZoomEffect) => void;
 }
 
-const MAIN_TABS = ['我的素材', '序列', '资源库', '文字稿', '字幕', '技能'] as const;
+const MAIN_TABS = ['我的素材', '序列', '资源库', '本地素材', '动态图形', '文字稿', '字幕', '技能'] as const;
 const SUB_TABS = ['MG 动画', '音效', '转场', '特效', '缩放', 'LUT'] as const;
 function localizeDefaultSequenceName(name: string, t: ReturnType<typeof useT>): string {
   const match = /^序列 (\d+)$/.exec(name);
   return match ? t('序列 {n}', { n: match[1]! }) : name;
 }
-export function LibraryPanel({ semanticScopeId, templates, onAddTemplate, onAddAudio, playerRef, fps, items, getSequenceOptions, onAddSequence, trackOptions, captionTracks, onSetCaptions, onCreateCaptionTrack, onUpdateCaptions, onSetItemTranscript, onToggleWord, onCleanScript, onSetGapCap, onSetTranscriptPlayOrder, onReorderTrackItems, onClearEdits, assets, mediaFolders, usedAssetIds, offlineAssetIds, onAssetLoadError, onImportMedia, onImportMobileMedia, onIngestDirectoryAsset, onTranscribeAsset, onAddMediaItem, onAddMediaAssetsToTimeline, onUseMediaAI, onCreateMediaFolder, onRenameMediaFolder, onDeleteMediaFolder, onMoveMediaAssets, onRenameMediaAsset, onRenameMediaAssets, onSetMediaAssetFavorite, onSetMediaAssetsFavorite, onRemoveMediaAsset, onRemoveMediaAssets, onPasteMediaAssets, onRelinkMediaAsset, creativeMode, onCreativeModeChange, onAddSolid, onUseTemplateAI, selectedItem, onApplyTransition, onApplyFx, onApplyZoom }: LibraryPanelProps) {
+export function LibraryPanel({ semanticScopeId, templates, onAddTemplate, onAddAudio, playerRef, fps, projectWidth, projectHeight, items, getSequenceOptions, onAddSequence, trackOptions, captionTracks, onSetCaptions, onCreateCaptionTrack, onUpdateCaptions, onSetItemTranscript, onToggleWord, onCleanScript, onSetGapCap, onSetTranscriptPlayOrder, onReorderTrackItems, onClearEdits, assets, mediaFolders, usedAssetIds, offlineAssetIds, onAssetLoadError, onImportMedia, onImportMobileMedia, onIngestDirectoryAsset, onTranscribeAsset, onAddMediaItem, onAddMediaAssetsToTimeline, onUseMediaAI, onCreateMediaFolder, onRenameMediaFolder, onDeleteMediaFolder, onMoveMediaAssets, onRenameMediaAsset, onRenameMediaAssets, onSetMediaAssetFavorite, onSetMediaAssetsFavorite, onRemoveMediaAsset, onRemoveMediaAssets, onPasteMediaAssets, onRelinkMediaAsset, creativeMode, onCreativeModeChange, onAddSolid, onUseTemplateAI, selectedItem, onApplyTransition, onApplyFx, onApplyZoom }: LibraryPanelProps) {
   const t = useT();
   const selKind = selectedItem?.kind ?? null;
   const isVisual = selKind != null && selKind !== 'audio';
@@ -165,6 +171,15 @@ export function LibraryPanel({ semanticScopeId, templates, onAddTemplate, onAddA
   const isSequences = mainTab === '序列';
   const sequenceOptions = useMemo(() => isSequences ? getSequenceOptions() : [], [isSequences, getSequenceOptions]);
   const isSkills = mainTab === '技能';
+  const isLocalAssets = mainTab === '本地素材';
+  const isMotionStudio = mainTab === '动态图形';
+  const [localAssetsVersion, setLocalAssetsVersion] = useState(0);
+  // Server-rendered media (HyperFrames) joins the pool like an upload, then lands at the playhead.
+  const addRenderedMedia = async (record: MobileUploadRecord) => {
+    const asset = await importUploadedMedia(record, fps);
+    onIngestDirectoryAsset(asset, fps);
+    onAddMediaItem(asset);
+  };
   const openCaptionStyles = (sourceItemIds: string[]) => {
     const target = captionTracks[0];
     if (!target?.captions && sourceItemIds.length) {
@@ -230,6 +245,16 @@ export function LibraryPanel({ semanticScopeId, templates, onAddTemplate, onAddA
             onCreateFolder={onCreateMediaFolder} onRenameFolder={onRenameMediaFolder} onDeleteFolder={onDeleteMediaFolder}
             onMoveAssets={onMoveMediaAssets} onRenameAsset={onRenameMediaAsset} onTranscribe={onTranscribeAsset} onRenameAssets={onRenameMediaAssets} onSetFavorite={onSetMediaAssetFavorite} onSetAssetsFavorite={onSetMediaAssetsFavorite} onRemoveAsset={onRemoveMediaAsset} onRemoveAssets={onRemoveMediaAssets} onPasteAssets={onPasteMediaAssets}
             onRelinkAsset={onRelinkMediaAsset} onAddSolid={onAddSolid} />
+        </div>
+      ) : isLocalAssets ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, borderTop: `0.5px solid ${theme.border}` }}>
+          <AssetLibraryBrowser fps={fps} selectedItem={selectedItem} onAddAudio={onAddAudio} onAddTemplate={onAddTemplate}
+            onApplyTransition={onApplyTransition} onAddRenderedMedia={addRenderedMedia} refreshKey={localAssetsVersion} />
+        </div>
+      ) : isMotionStudio ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, borderTop: `0.5px solid ${theme.border}` }}>
+          <MotionGraphicsStudio fps={fps} width={projectWidth} height={projectHeight} onAddTemplate={onAddTemplate}
+            onAddRenderedMedia={addRenderedMedia} onSaved={() => setLocalAssetsVersion((v) => v + 1)} />
         </div>
       ) : isSkills ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, borderTop: `0.5px solid ${theme.border}` }}>
