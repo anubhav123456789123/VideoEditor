@@ -2,13 +2,11 @@ import type { IncomingMessage } from 'node:http';
 import type { Plugin } from 'vite';
 import { getKey, type KeyName } from '../keystore.ts';
 import {
-  requireLlmProvider,
   llmProviderPreset,
-  protocolForProvider,
+  requireLlmProvider,
   type LlmProvider,
 } from '../../shared/llm-providers.ts';
 import { resolveLlmProviderConfig } from '../llm-config.ts';
-import { xaiOauthAccessToken } from '../xai-oauth-session.ts';
 import { proxyMiddleware } from '../proxy.ts';
 
 function keyReader(name: string): string {
@@ -26,27 +24,12 @@ export function llmTarget(req?: IncomingMessage): string {
 
 export function llmHeaders(req?: IncomingMessage): Record<string, string> {
   const config = resolveLlmProviderConfig(llmProviderForRequest(req), keyReader);
-  if (config.provider === 'xai-oauth') {
-    // OAuth requests only trust the active in-memory session. API-key accounts
-    // use the separate xai provider and LLM_XAI_API_KEY slot.
-    const token = xaiOauthAccessToken();
-    return token ? { authorization: `Bearer ${token}` } : {};
-  }
   if (!config.apiKey) return {};
-  const protocol = protocolForProvider(config.provider);
-  if (protocol === 'anthropic') return { 'x-api-key': config.apiKey, 'anthropic-version': '2023-06-01' };
-  if (protocol === 'google') return { 'x-goog-api-key': config.apiKey };
-  return { authorization: `Bearer ${config.apiKey}` };
+  return { 'x-api-key': config.apiKey, 'anthropic-version': '2023-06-01' };
 }
 
 export function llmErrorMessage(status: number, req?: IncomingMessage): string {
-  const provider = llmProviderForRequest(req);
-  const label = llmProviderPreset(provider).label;
-  if (provider === 'xai-oauth' && (status === 401 || status === 403)) {
-    return status === 403
-      ? 'xAI 拒绝了订阅会话的 API 访问（当前订阅档位可能未开放）。可升级订阅，或改在“设置 → Agent 模型 → xAI Grok”页配置 API Key 使用。'
-      : 'xAI 订阅会话已失效。请在终端运行 grok login 重新登录，然后在“设置 → Agent 模型 → xAI Grok (订阅登录)”页点击导入。';
-  }
+  const label = llmProviderPreset(llmProviderForRequest(req)).label;
   if (status === 401 || status === 403) {
     return `${label} 认证失败。请在“设置 → Agent 模型”中检查 API Key。`;
   }

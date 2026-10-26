@@ -4,25 +4,12 @@ import { selectAgentModel } from '../../agent/model-selection';
 import { Icon } from '../icons';
 import { ComposerPopover } from './ComposerPopover';
 import type { ComposerModelView } from './useComposerModelView';
-import codexPng from '../../../assets/vendor-icons/codex-color.png';
-import copilotSvg from '../../../assets/vendor-icons/copilot.svg?raw';
 import claudeSvg from '../../../assets/vendor-icons/claude-color.svg';
 
-function ChoiceLogo({ backend }: { backend: 'api' | 'codex' | 'copilot' | 'claude-code' }) {
-  if (backend === 'copilot') {
-    return (
-      <span
-        aria-hidden
-        // Static codebase asset, non-user input — inlined so it inherits currentColor.
-        dangerouslySetInnerHTML={{ __html: copilotSvg }}
-        style={{ width: 18, height: 18, borderRadius: 5, flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: theme.panel, border: `0.5px solid ${theme.borderLight}`, color: theme.text, fontSize: 12 }}
-      />
-    );
-  }
-  if (backend !== 'codex' && backend !== 'claude-code') return null;
+function ChoiceLogo() {
   return (
     <img
-      src={backend === 'codex' ? codexPng : claudeSvg}
+      src={claudeSvg}
       alt=""
       aria-hidden
       style={{ width: 18, height: 18, borderRadius: 5, objectFit: 'contain', flex: '0 0 auto', background: theme.panel, border: `0.5px solid ${theme.borderLight}` }}
@@ -53,7 +40,7 @@ export function ComposerModelPicker({ anchor, onClose, view }: {
           <button type="button" key={choice.id}
             onClick={() => { selectAgentModel(choice.id); onClose(); }}
             style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '7px 9px', border: 0, borderRadius: 3, background: active ? theme.panel : 'transparent', color: theme.text, cursor: 'pointer', textAlign: 'left' }}>
-            <ChoiceLogo backend={choice.backend} />
+            <ChoiceLogo />
             <span style={{ flex: 1, minWidth: 0 }}>
               <strong style={{ display: 'block', fontSize: 11.5, fontWeight: 600 }}>{choice.providerLabel}</strong>
               <small style={{ display: 'block', color: theme.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{choice.model}</small>

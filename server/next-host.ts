@@ -17,7 +17,6 @@ import { productAssetsPlugin } from './product-assets.ts';
 import { runtimeProfile } from './runtime-profile.ts';
 import { applyAuthoritativeLocalProvider } from '../shared/local-provider-env.ts';
 import { createMiniConnect } from '../desktop/mini-connect.ts';
-import { mountAssemblyAiProxy } from '../desktop/embedded-server.ts';
 import { uploadsMiddleware } from '../desktop/static-files.ts';
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -53,8 +52,6 @@ async function main(): Promise<void> {
   const server = createServer((req, res) => app.handle(req, res));
   const nextApp = next({ dev, hostname, port, httpServer: server, turbopack: true });
   const handle = nextApp.getRequestHandler();
-
-  mountAssemblyAiProxy(app);
 
   // The plugins' only host dependencies: middlewares.use, httpServer, config.logger.
   const host = {

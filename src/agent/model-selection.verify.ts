@@ -9,17 +9,17 @@ import {
 } from '../../shared/model-capabilities';
 
 const unknownCapabilities = resolveModelCapabilities({
-  backend: 'api', provider: 'openai', modelId: 'custom/model:v2',
+  backend: 'api', provider: 'anthropic', modelId: 'custom/model:v2',
 });
 const configured: AgentModelSnapshot = {
   loaded: true,
-  activeId: 'openai:gpt-test',
+  activeId: 'anthropic:claude-test',
   choices: [{
-    id: 'openai:gpt-test',
+    id: 'anthropic:claude-test',
     backend: 'api',
-    provider: 'openai',
-    providerLabel: 'OpenAI',
-    model: 'gpt-test',
+    provider: 'anthropic',
+    providerLabel: 'Claude',
+    model: 'claude-test',
     capabilities: unknownCapabilities,
   }],
 };
@@ -27,19 +27,18 @@ const configured: AgentModelSnapshot = {
 assert.equal(isAgentModelReady(configured), true);
 assert.equal(isAgentModelReady({ ...configured, loaded: false }), false, 'startup hydration blocks first send');
 assert.equal(isAgentModelReady({ ...configured, activeId: '' }), false, 'missing active model blocks send');
-assert.equal(isAgentModelReady({ ...configured, activeId: 'openai:missing' }), false, 'stale selection blocks send');
+assert.equal(isAgentModelReady({ ...configured, activeId: 'anthropic:missing' }), false, 'stale selection blocks send');
 assert.equal(isAgentModelReady({ ...configured, choices: [] }), false, 'unconfigured providers block send');
 
-const known = resolveModelCapabilities({ backend: 'api', provider: 'openai', modelId: 'gpt-5' });
-assert.deepEqual(known.contextWindowTokens, { value: 400_000, estimated: false, source: 'catalog' });
-assert.deepEqual(known.maxInputTokens, { value: 272_000, estimated: false, source: 'catalog' });
+const known = resolveModelCapabilities({ backend: 'api', provider: 'anthropic', modelId: 'claude-opus-5-5' });
+assert.deepEqual(known.contextWindowTokens, { value: 1_000_000, estimated: false, source: 'catalog' });
+assert.deepEqual(known.maxInputTokens, { value: 872_000, estimated: true, source: 'provider-fallback' },
+  'no published input cap: context minus output, flagged as an estimate');
 assert.deepEqual(known.maxOutputTokens, { value: 128_000, estimated: false, source: 'catalog' });
 assert.deepEqual(known.supportsTools, { value: true, estimated: false, source: 'catalog' });
 assert.deepEqual(known.supportsImages, { value: true, estimated: false, source: 'catalog' });
-const gpt56 = resolveModelCapabilities({ backend: 'api', provider: 'openai', modelId: 'gpt-5.6-sol' });
-assert.deepEqual(gpt56.contextWindowTokens, { value: 1_050_000, estimated: false, source: 'catalog' });
-assert.deepEqual(gpt56.maxInputTokens, { value: 922_000, estimated: false, source: 'catalog' });
-assert.deepEqual(gpt56.maxOutputTokens, { value: 128_000, estimated: false, source: 'catalog' });
+const sonnet45 = resolveModelCapabilities({ backend: 'api', provider: 'anthropic', modelId: 'claude-sonnet-4-5' });
+assert.deepEqual(sonnet45.maxOutputTokens, { value: 64_000, estimated: false, source: 'catalog' });
 
 assert.deepEqual(unknownCapabilities.contextWindowTokens, {
   value: 409_600, estimated: true, source: 'provider-fallback',
@@ -59,7 +58,7 @@ assert.deepEqual(unknownCapabilities.supportsTools, {
 
 const overrides = parseModelCapabilityOverrides(JSON.stringify([{
   backend: 'api',
-  provider: 'openai',
+  provider: 'anthropic',
   modelId: ' custom/model:v2 ',
   contextWindowTokens: 65_536,
   maxInputTokens: 60_000,
@@ -68,7 +67,7 @@ const overrides = parseModelCapabilityOverrides(JSON.stringify([{
   supportsImages: true,
 }]));
 const overridden = resolveModelCapabilities(
-  { backend: 'api', provider: 'openai', modelId: 'custom/model:v2' },
+  { backend: 'api', provider: 'anthropic', modelId: 'custom/model:v2' },
   overrides,
 );
 assert.deepEqual(overridden.contextWindowTokens, {
@@ -86,14 +85,14 @@ assert.equal(serializeModelCapabilityOverrides(overrides).includes(' custom/mode
 
 assert.throws(() => parseModelCapabilityOverrides('[{"backend":"api","provider":"openai","modelId":"x","apiKey":"secret"}]'), /Unknown/);
 assert.throws(() => parseModelCapabilityOverrides(JSON.stringify([
-  { backend: 'api', provider: 'openai', modelId: 'x', supportsTools: true },
-  { backend: 'api', provider: 'openai', modelId: 'x', supportsImages: true },
+  { backend: 'api', provider: 'anthropic', modelId: 'x', supportsTools: true },
+  { backend: 'api', provider: 'anthropic', modelId: 'x', supportsImages: true },
 ])), /Duplicate/);
 assert.throws(() => parseModelCapabilityOverrides(JSON.stringify([{
-  backend: 'api', provider: 'openai', modelId: 'x', supportsReasoning: false, reasoningEfforts: ['high'],
+  backend: 'api', provider: 'anthropic', modelId: 'x', supportsReasoning: false, reasoningEfforts: ['high'],
 }])), /Disabled reasoning/);
 assert.throws(() => parseModelCapabilityOverrides(JSON.stringify([{
-  backend: 'api', provider: 'openai', modelId: 'x', contextWindowTokens: 8_192, maxInputTokens: 8_193,
+  backend: 'api', provider: 'anthropic', modelId: 'x', contextWindowTokens: 8_192, maxInputTokens: 8_193,
 }])), /input limit exceeds/);
 
 // ── Claude Code backend: provider/backend pairing is enforced ────────────────
@@ -101,7 +100,7 @@ assert.throws(
   () => parseModelCapabilityOverrides(JSON.stringify([
     { backend: 'claude-code', provider: 'openai', modelId: 'sonnet', supportsTools: true },
   ])),
-  /Anthropic provider/,
+  /provider/,
   'claude-code capabilities are rejected for a non-Anthropic provider',
 );
 assert.doesNotThrow(

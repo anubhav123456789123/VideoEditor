@@ -22,7 +22,7 @@ export function ClaudeCodeVendorPane({ page, hint, ctx, children, rawOverrides, 
     : !status.installed ? t('CLI 未安装')
       : status.account?.loggedIn ? t('已登录')
         : status.error || ctx.claudeCode.error ? t('连接异常') : t('未登录');
-  const on = vendorConfigured(ctx.status, page, ctx.codex.status, ctx.copilot.status, status);
+  const on = vendorConfigured(ctx.status, page, status);
   const capabilityModelId = (ctx.values.CLAUDE_CODE_MODEL ?? modelValue(ctx.status, 'CLAUDE_CODE_MODEL'))
     || ctx.claudeCode.models.find((model) => model.isDefault)?.id
     || '';

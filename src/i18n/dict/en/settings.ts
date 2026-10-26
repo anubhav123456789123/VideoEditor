@@ -610,4 +610,13 @@ export default {
   '桌面端点击“选择目录”；也可手动输入绝对路径（可用 ~/ 开头）。清除后回到默认目录。': 'On desktop, click "Choose folder"; you can also type an absolute path (~/ accepted). Clear it to return to the default folder.',
   '已保存 · 重启应用后新的工程存储目录才会生效': 'Saved · the new project storage folder takes effect after a restart',
   '该模型不在内置目录，以上数值为估算（上下文 {context} / 输出 {output}）。若与实际不符，点「展开」手动修改。': 'This model is not in the built-in catalog, so these values are estimates (context {context} / output {output}). If they do not match the real model, expand and adjust them manually.',
+  '一键写入 ~/.claude.json，Claude 订阅用户直连。': 'Writes ~/.claude.json in one click so Claude subscribers connect directly.',
+  '或在终端运行以下命令完成注册。': 'Or run this command in a terminal to register it.',
+  '粘贴 Anthropic API Key 即可与 Claude 对话并让它直接编辑时间线。也可以在「Claude Code」页使用 Claude 订阅登录。': 'Paste an Anthropic API key to chat with Claude and let it edit the timeline directly. You can also sign in with a Claude subscription on the "Claude Code" page.',
+  '素材进入媒体池后是否立即转写。本地 Whisper 免费且在本机运行。': 'Whether media is transcribed as soon as it enters the media pool. Local Whisper is free and runs on this computer.',
+  '访问 Claude API 失败时，可在此填写本地代理地址（如 http://127.0.0.1:7890）。留空则使用系统环境变量（HTTPS_PROXY / HTTP_PROXY）。': 'If the Claude API is unreachable, enter a local proxy address here (e.g. http://127.0.0.1:7890). Leave empty to use the system environment variables (HTTPS_PROXY / HTTP_PROXY).',
+  '语音识别': 'Speech recognition',
+  '请先在设置中配置 Claude（API Key 或 Claude Code）。': 'Set up Claude in Settings first (API key or Claude Code).',
+  '跟随界面语言': 'Follow interface language',
+  '连接后重启 Claude Code 生效。': 'Restart Claude Code after connecting for the change to take effect.',
 } as Record<string, string>;

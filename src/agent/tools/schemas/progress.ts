@@ -12,10 +12,10 @@ export function withProgressTargets(schemas: AgentToolSchema[]): AgentToolSchema
         ...tool.input_schema,
         properties: {
           ...properties,
-          target: { type: 'string', enum: ['generation', 'transcription', 'upload', 'visual-analysis'], description: 'Which async task kind to inspect: generation (default), transcription, upload, or visual-analysis.' },
+          target: { type: 'string', enum: ['transcription', 'upload', 'visual-analysis'], description: 'Which async task kind to inspect: transcription, upload, or visual-analysis.' },
           assetIds: { type: 'string', description: 'Comma-separated asset IDs/prefixes, for target=transcription / upload / visual-analysis.' },
         },
-        required: ['action'],
+        required: ['action', 'target'],
       },
     };
   });

@@ -6,15 +6,11 @@ import { editorBootstrapInfo } from '../../agent/editor-credential';
 import { theme, themeAlpha } from '../../theme';
 import { useT } from '../../i18n/locale';
 import { Icon } from '../icons';
-import { qwenWorkConnectJson } from './mcpClientConfig';
+import { claudeMcpAddCommand } from './mcpClientConfig';
 import claudeSvg from '../../../assets/vendor-icons/claude-color.svg?raw';
-import codexPng from '../../../assets/vendor-icons/codex-color.png';
-import cursorPng from '../../../assets/vendor-icons/cursor-color.png';
-import antigravityPng from '../../../assets/vendor-icons/antigravity-color.png';
-import qwenSvg from '../../../assets/vendor-icons/qwen-color.svg?raw';
 
 interface ClientSnippet {
-  client: 'claude' | 'codex' | 'cursor' | 'antigravity' | 'qoder' | 'qwenwork';
+  client: 'claude' | 'claude-cli';
   logo: ReactElement;
   name: string;
   desc: string;
@@ -24,85 +20,32 @@ interface ClientSnippet {
   mode: 'connect' | 'paste';
 }
 
+function claudeLogo(): ReactElement {
+  return <span aria-hidden className="cc-vendor-icon" style={{ color: '#d97757', width: 26, height: 26, fontSize: 26, display: 'inline-flex' }} dangerouslySetInnerHTML={{ __html: claudeSvg }} />;
+}
+
 function clientSnippets(): ClientSnippet[] {
   return [
     {
       client: 'claude',
-      logo: <span aria-hidden className="cc-vendor-icon" style={{ color: '#d97757', width: 26, height: 26, fontSize: 26, display: 'inline-flex' }} dangerouslySetInnerHTML={{ __html: claudeSvg }} />,
+      logo: claudeLogo(),
       name: 'Claude Code',
-      desc: 'Anthropic 官方 CLI，Claude 订阅用户直连。',
+      desc: '一键写入 ~/.claude.json，Claude 订阅用户直连。',
       mode: 'connect',
     },
     {
-      client: 'codex',
-      logo: <ClientLogo src={codexPng} alt="Codex" />,
-      name: 'Codex',
-      desc: 'OpenAI CLI，通过环境变量携带令牌。',
-      mode: 'connect',
-    },
-    {
-      client: 'cursor',
-      logo: <ClientLogo src={cursorPng} alt="Cursor" />,
-      name: 'Cursor',
-      desc: '写入 ~/.cursor/mcp.json 的全局配置。',
-      mode: 'connect',
-    },
-    {
-      client: 'antigravity',
-      logo: <ClientLogo src={antigravityPng} alt="Antigravity" />,
-      name: 'Antigravity',
-      desc: '写入 ~/.gemini/antigravity/mcp_config.json。',
-      mode: 'connect',
-    },
-    {
-      client: 'qoder',
-      logo: <ClientMonogram letter="Q" ariaLabel="Qoder" />,
-      name: 'Qoder',
-      desc: '写入 ~/.qoder/settings.json，国内版同时写 ~/.qoder-cn。',
-      mode: 'connect',
-    },
-    {
-      client: 'qwenwork',
-      logo: <span aria-hidden className="cc-vendor-icon" style={{ width: 26, height: 26, fontSize: 26, display: 'inline-flex' }} dangerouslySetInnerHTML={{ __html: qwenSvg }} />,
-      name: '千问办公',
-      desc: '自定义 MCP 只存在应用内，复制 JSON 后在连接器里粘贴。',
+      client: 'claude-cli',
+      logo: claudeLogo(),
+      name: 'Claude Code CLI',
+      desc: '或在终端运行以下命令完成注册。',
       mode: 'paste',
     },
   ];
 }
 
-function ClientLogo({ src, alt }: { src: string; alt: string }) {
-  return (
-    <img
-      src={src}
-      alt={alt}
-      aria-hidden
-      style={{ width: 26, height: 26, borderRadius: 6, objectFit: 'contain', flex: '0 0 auto', background: theme.panel, border: `0.5px solid ${theme.borderLight}` }}
-    />
-  );
-}
-
-function ClientMonogram({ letter, ariaLabel }: { letter: string; ariaLabel: string }) {
-  return (
-    <span
-      aria-label={ariaLabel}
-      style={{
-        width: 26, height: 26, borderRadius: 6, flex: '0 0 auto',
-        background: theme.inset, border: `0.5px solid ${theme.borderLight}`,
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        color: theme.textMuted, fontSize: 13, fontWeight: 700,
-      }}
-    >
-      {letter}
-    </span>
-  );
-}
-
 function connectErrorMessage(t: ReturnType<typeof useT>, error: string): string {
   if (error === 'config-parse-error') return t('目标配置文件不是有效 JSON，为避免覆盖未写入。');
   if (error === 'config-write-error') return t('写入配置文件失败。');
-  if (error === 'codex-cli-failed') return t('执行 codex mcp add 失败。');
-  if (error === 'token-env-write-error') return t('已在 Codex 注册，但令牌未能保存为 Windows 用户环境变量，连接未完成。');
   return t('连接失败');
 }
 
@@ -124,15 +67,12 @@ function ConnectButton({ client, onStatus }: { client: ClientSnippet['client']; 
         })
           .then(async (response) => {
             const data: unknown = await response.json().catch(() => null);
-            const result = data as { ok?: boolean; paths?: string[]; error?: string; notice?: string } | null;
+            const result = data as { ok?: boolean; paths?: string[]; error?: string } | null;
             if (response.ok && result?.ok) {
               setState('done');
               const paths = (result.paths ?? []).join('、');
               // Only processes started after a Windows user variable is saved see it.
-              const message = result.notice === 'restart-codex'
-                ? t('已写入 {paths}。请完全退出并重新打开 Codex，令牌才会生效。', { paths })
-                : t('已写入 {paths}', { paths });
-              onStatus(message, true);
+              onStatus(t('已写入 {paths}', { paths }), true);
               setTimeout(() => setState('idle'), 2500);
             } else {
               setState('error');
@@ -281,13 +221,13 @@ export function McpGuideDialog({ onClose }: { onClose: () => void }) {
                       />
                     ) : (
                       <CopySnippetButton
-                        getSnippet={() => qwenWorkConnectJson(endpoint, mcpToken)}
+                        getSnippet={() => claudeMcpAddCommand(endpoint, mcpToken)}
                         onStatus={(message, ok) => setConnectStatus((prev) => ({ ...prev, [snippet.client]: { message, ok } }))}
                       />
                     )}
                   </div>
                 </div>
-                {snippet.mode === 'paste' ? <pre style={snippetStyle}>{qwenWorkConnectJson(endpoint, mcpToken)}</pre> : null}
+                {snippet.mode === 'paste' ? <pre style={snippetStyle}>{claudeMcpAddCommand(endpoint, mcpToken)}</pre> : null}
                 {connectStatus[snippet.client]?.message ? (
                   <div style={{ color: connectStatus[snippet.client].ok ? theme.accent : theme.danger, fontSize: 11 }}>
                     {connectStatus[snippet.client].message}
@@ -296,7 +236,7 @@ export function McpGuideDialog({ onClose }: { onClose: () => void }) {
               </div>
             ))}
             <div style={{ color: theme.textDim, fontSize: 11 }}>
-              {t('连接后重启对应客户端生效；Codex 需新开终端使环境变量生效。')}
+              {t('连接后重启 Claude Code 生效。')}
             </div>
           </div>
         ) : (
@@ -310,12 +250,6 @@ export function McpGuideDialog({ onClose }: { onClose: () => void }) {
             <span style={{ fontSize: 12, fontWeight: 600 }}>{t('内置 Agent 与外部 MCP')}</span>
             <div style={{ color: theme.textMuted, fontSize: 12, lineHeight: 1.55 }}>
               {t('内置 Agent 会先生成可预览的修改提案，由你应用或拒绝；外部 MCP 使用独立编辑会话，manual 模式等待审核，auto 模式在 review 时直接应用。两者都只通过 EditorCore 命令修改工程。')}
-            </div>
-          </div>
-          <div style={cardStyle}>
-            <span style={{ fontSize: 12, fontWeight: 600 }}>{t('连接本地模型')}</span>
-            <div style={{ color: theme.textMuted, fontSize: 12, lineHeight: 1.55 }}>
-              {t('打开 设置 → Agent 模型 → Agent 大脑 → OpenAI，填写本地或兼容服务的 API URL 和模型；按服务选择 Responses API 或 Chat Completions API，再点“测试并读取模型”。仅在服务要求时填写 API Key。')}
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 // track-progress-targets.check.ts verifies the track_progress target surface:
-// the schema extender advertises all four targets with required=['action'],
+// the schema extender advertises the three targets with required=['action','target'],
 // and upload / visual-analysis answer with structured results instead of errors.
 //   npx tsx src/agent/progress/track-progress-targets.check.ts
 import assert from 'node:assert/strict';
@@ -14,25 +14,25 @@ import type { AgentContext } from '../context';
 // ── Schema exposes every supported target ─────────────────────────────────
 const base: AgentToolSchema = {
   name: 'track_progress',
-  description: 'Inspect or wait for asynchronous generation jobs.',
+  description: 'Inspect or wait for asynchronous jobs.',
   input_schema: {
     type: 'object',
-    properties: { action: { type: 'string' }, target: { type: 'string', enum: ['generation'] } },
-    required: ['action', 'target', 'jobIds'],
+    properties: { action: { type: 'string' } },
+    required: ['action'],
   },
 };
-const other: AgentToolSchema = { name: 'submit_music', description: 'x', input_schema: { type: 'object', properties: {} } };
+const other: AgentToolSchema = { name: 'submit_export', description: 'x', input_schema: { type: 'object', properties: {} } };
 const [extended, untouched] = withProgressTargets([base, other]);
 const input = extended.input_schema as { required?: string[]; properties: Record<string, { enum?: string[] }> };
-assert.deepEqual(input.required, ['action'], 'source requires only action');
+assert.deepEqual(input.required, ['action', 'target'], 'source requires action and target');
 assert.deepEqual(
   input.properties.target?.enum,
-  ['generation', 'transcription', 'upload', 'visual-analysis'],
-  'all four source targets advertised',
+  ['transcription', 'upload', 'visual-analysis'],
+  'all three source targets advertised',
 );
 assert.ok(typeof input.properties.assetIds === 'object', 'assetIds param present');
 assert.equal(untouched, other, 'non-track_progress tools pass through untouched');
-assert.deepEqual((base.input_schema as { required?: string[] }).required, ['action', 'target', 'jobIds'], 'extender is immutable — original schema unchanged');
+assert.deepEqual((base.input_schema as { required?: string[] }).required, ['action'], 'extender is immutable — original schema unchanged');
 
 // ── upload / visual-analysis answer structurally, never throw ──
 const state: TimelineState = {

@@ -1,10 +1,7 @@
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 
-/** wire protocol the SERVER proxy speaks upstream: auth header + path family.
- * 'google' = Gemini native API (x-goog-api-key, /models/{id}:generateContent). */
-export type LlmProtocol = 'anthropic' | 'openai' | 'google' | 'openai-compatible';
-export type OpenAiApiMode = 'responses' | 'chat';
-export const DEFAULT_OPENAI_API_MODE: OpenAiApiMode = 'responses';
+/** Wire protocol the server proxy speaks upstream. Anthropic is the only provider. */
+export type LlmProtocol = 'anthropic';
 
 interface LlmProviderPreset {
   readonly id: string;
@@ -17,153 +14,10 @@ interface LlmProviderPreset {
 export const LLM_PROVIDER_PRESETS = [
   {
     id: 'anthropic',
-    label: 'Anthropic · Claude',
+    label: 'Claude',
     protocol: 'anthropic',
     baseUrl: 'https://api.anthropic.com/v1',
-    defaultModel: 'claude-fable-5',
-  },
-  {
-    id: 'openai',
-    label: 'OpenAI',
-    protocol: 'openai',
-    baseUrl: 'https://api.openai.com/v1',
-    defaultModel: 'gpt-5',
-  },
-  {
-    id: 'gemini',
-    label: 'Google · Gemini',
-    protocol: 'google',
-    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
-    defaultModel: 'gemini-3.5-flash',
-  },
-  {
-    id: 'kimi',
-    label: 'Moonshot AI · Kimi',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://api.moonshot.ai/v1',
-    defaultModel: 'kimi-k3',
-  },
-  {
-    id: 'qwen',
-    label: 'Alibaba Cloud · Qwen',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://dashscope-us.aliyuncs.com/compatible-mode/v1',
-    defaultModel: 'qwen-plus',
-  },
-  {
-    id: 'glm',
-    label: 'Zhipu AI · GLM',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-    defaultModel: 'glm-5.2',
-  },
-  {
-    id: 'deepseek',
-    label: 'DeepSeek',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://api.deepseek.com',
-    defaultModel: 'deepseek-v4-pro',
-  },
-  {
-    id: 'stepfun',
-    label: 'StepFun',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://api.stepfun.com/v1',
-    defaultModel: 'step-3.7-flash',
-  },
-  {
-    // BytePlus ModelArk: one Ark-compatible endpoint fronting many hosted
-    // models (DeepSeek, GLM, Doubao-Seed, ...). Swap LLM_BYTEPLUS_MODEL to
-    // any model id activated in the BytePlus console.
-    id: 'byteplus',
-    label: 'BytePlus · ModelArk',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://ark.ap-southeast.bytepluses.com/api/v3',
-    defaultModel: 'deepseek-v4-pro',
-  },
-  {
-    id: 'minimax',
-    label: 'MiniMax',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://api.minimaxi.com/v1',
-    defaultModel: 'MiniMax-M3',
-  },
-  {
-    id: 'xiaomi',
-    label: 'Xiaomi · MiMo',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://api.xiaomimimo.com/v1',
-    defaultModel: 'mimo-v2.5-pro',
-  },
-  {
-    id: 'mistral',
-    label: 'Mistral AI',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://api.mistral.ai/v1',
-    defaultModel: 'mistral-large-latest',
-  },
-  {
-    id: 'xai',
-    label: 'xAI · Grok',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://api.x.ai/v1',
-    defaultModel: 'grok-4.6',
-  },
-  {
-    id: 'xai-oauth',
-    label: 'xAI · Grok (订阅登录)',
-    protocol: 'openai',
-    baseUrl: 'https://api.x.ai/v1',
-    defaultModel: 'grok-4.6',
-  },
-  {
-    id: 'openrouter',
-    label: 'OpenRouter',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://openrouter.ai/api/v1',
-    defaultModel: 'openrouter/auto',
-  },
-  {
-    id: 'ofox',
-    label: 'OFox',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://api.ofox.ai/v1',
-    defaultModel: 'deepseek/deepseek-v3.2',
-  },
-  {
-    id: 'orcarouter',
-    label: 'OrcaRouter',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://api.orcarouter.ai/v1',
-    defaultModel: 'orcarouter/auto',
-  },
-  {
-    id: 'requesty',
-    label: 'Requesty',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://router.requesty.ai/v1',
-    defaultModel: 'claude-sonnet-5',
-  },
-  {
-    id: 'cheaperinference',
-    label: 'Cheaper Inference',
-    protocol: 'openai-compatible',
-    baseUrl: 'https://api.cheaperinference.com/v1',
-    defaultModel: 'gpt-5.4-mini',
-  },
-  {
-    id: 'ollama',
-    label: 'Ollama (Local)',
-    protocol: 'openai-compatible',
-    baseUrl: 'http://localhost:11434/v1',
-    defaultModel: 'qwen2.5-coder:7b',
-  },
-  {
-    id: 'lmstudio',
-    label: 'LM Studio (Local)',
-    protocol: 'openai-compatible',
-    baseUrl: 'http://localhost:1234/v1',
-    defaultModel: 'qwen2.5-coder-7b-instruct',
+    defaultModel: 'claude-opus-5-5',
   },
 ] as const satisfies readonly LlmProviderPreset[];
 
@@ -178,102 +32,62 @@ export interface LlmProviderConfigNames {
   readonly legacyContextWindow: string;
 }
 
-const PRESETS = new Map<string, (typeof LLM_PROVIDER_PRESETS)[number]>(
-  LLM_PROVIDER_PRESETS.map((preset) => [preset.id, preset] as const),
-);
-
-export function normalizeLlmProvider(value: unknown): LlmProvider {
-  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return PRESETS.has(normalized) ? normalized as LlmProvider : DEFAULT_LLM_PROVIDER;
+/** Every stored or requested provider value resolves to Claude. */
+export function normalizeLlmProvider(_value?: unknown): LlmProvider {
+  return DEFAULT_LLM_PROVIDER;
 }
-/** Request boundaries must not silently route an unsupported vendor to the default. */
+
+/** Request boundaries must not silently route an unsupported vendor to Claude. */
 export function requireLlmProvider(value: unknown): LlmProvider {
   if (value === undefined || value === null || value === '') return DEFAULT_LLM_PROVIDER;
-  if (typeof value !== 'string') throw new Error('Unsupported LLM provider');
-  const normalized = value.trim().toLowerCase();
-  if (normalized && !PRESETS.has(normalized)) throw new Error('Unsupported LLM provider');
-  return normalizeLlmProvider(normalized);
+  if (typeof value !== 'string' || value.trim().toLowerCase() !== DEFAULT_LLM_PROVIDER) {
+    throw new Error('Unsupported LLM provider');
+  }
+  return DEFAULT_LLM_PROVIDER;
 }
 
-export function isLocalLlmProvider(provider: unknown): boolean {
-  const normalized = normalizeLlmProvider(provider);
-  return normalized === 'ollama' || normalized === 'lmstudio';
+export function llmProviderPreset(_provider?: unknown): LlmProviderPreset {
+  return LLM_PROVIDER_PRESETS[0];
 }
 
-export function llmProviderPreset(provider: unknown): LlmProviderPreset {
-  return PRESETS.get(normalizeLlmProvider(provider)) ?? LLM_PROVIDER_PRESETS[0];
-}
-
-/** Stable per-vendor setting names. Secrets stay server-side; URL/model are non-secret config. */
-export function llmProviderConfigNames(provider: unknown): LlmProviderConfigNames {
-  const token = normalizeLlmProvider(provider).replace(/-/g, '_').toUpperCase();
+/** Stable setting names. The key stays server-side; URL/model are non-secret config. */
+export function llmProviderConfigNames(_provider?: unknown): LlmProviderConfigNames {
   return {
-    apiKey: `LLM_${token}_API_KEY`,
-    baseUrl: `LLM_${token}_BASE_URL`,
-    model: `LLM_${token}_MODEL`,
-    legacyContextWindow: `LLM_${token}_CONTEXT_WINDOW`,
+    apiKey: 'LLM_ANTHROPIC_API_KEY',
+    baseUrl: 'LLM_ANTHROPIC_BASE_URL',
+    model: 'LLM_ANTHROPIC_MODEL',
+    legacyContextWindow: 'LLM_ANTHROPIC_CONTEXT_WINDOW',
   };
 }
 
-export function defaultModelForProvider(provider: unknown): string {
-  return llmProviderPreset(provider).defaultModel;
+export function defaultModelForProvider(_provider?: unknown): string {
+  return LLM_PROVIDER_PRESETS[0].defaultModel;
 }
 
-
-export function protocolForProvider(provider: unknown): LlmProtocol {
-  return llmProviderPreset(provider).protocol;
+export function protocolForProvider(_provider?: unknown): LlmProtocol {
+  return 'anthropic';
 }
 
-export function normalizeOpenAiApiMode(value: unknown): OpenAiApiMode {
-  return value === 'chat' ? 'chat' : DEFAULT_OPENAI_API_MODE;
-}
-
-/** Provider request rules shared by browser and server model adapters. */
+/** Claude request rules shared by browser and server model adapters. */
 export function resolveModelRequestPolicy(
-  provider: unknown,
-  openAiApiMode: unknown = DEFAULT_OPENAI_API_MODE,
+  _provider?: unknown,
   cacheMode: 'short' | 'long' = 'short',
 ): {
   protocol: LlmProtocol;
-  apiMode: OpenAiApiMode;
-  providerOptions: SharedV4ProviderOptions | undefined;
-  cacheTtlMs: number | undefined;
+  providerOptions: SharedV4ProviderOptions;
+  cacheTtlMs: number;
 } {
-  const normalized = normalizeLlmProvider(provider);
-  const protocol = protocolForProvider(normalized);
-  // Subscription sessions only speak Responses, regardless of the global toggle.
-  const apiMode = normalized === 'xai-oauth' ? 'responses' : normalizeOpenAiApiMode(openAiApiMode);
-  let providerOptions: SharedV4ProviderOptions | undefined;
-  if (normalized === 'anthropic') {
-    providerOptions = { anthropic: { cacheControl: cacheMode === 'long'
-      ? { type: 'ephemeral', ttl: '1h' }
-      : { type: 'ephemeral' } } };
-  } else if (normalized === 'minimax') {
-    providerOptions = { minimax: { reasoning_split: true } };
-  } else if (normalized !== 'xai-oauth' && protocol === 'openai' && apiMode === 'responses') {
-    providerOptions = { openai: { store: false } };
-  }
   return {
-    protocol,
-    apiMode,
-    providerOptions,
-    cacheTtlMs: normalized === 'anthropic'
-      ? (cacheMode === 'long' ? 60 : 5) * 60 * 1000
-      : undefined,
+    protocol: 'anthropic',
+    providerOptions: {
+      anthropic: {
+        cacheControl: cacheMode === 'long' ? { type: 'ephemeral', ttl: '1h' } : { type: 'ephemeral' },
+      },
+    },
+    cacheTtlMs: (cacheMode === 'long' ? 60 : 5) * 60 * 1000,
   };
 }
 
-export function providerApiPath(
-  provider: unknown,
-  openAiApiMode: unknown = DEFAULT_OPENAI_API_MODE,
-): string {
-  const { protocol, apiMode } = resolveModelRequestPolicy(provider, openAiApiMode);
-  if (protocol === 'anthropic') return '/messages';
-  if (protocol === 'google') return '/models'; // Native API path according to model:/models/{id}:generateContent
-  if (protocol === 'openai') {
-    return apiMode === 'chat'
-      ? '/chat/completions'
-      : '/responses';
-  }
-  return '/chat/completions';
+export function providerApiPath(_provider?: unknown): string {
+  return '/messages';
 }

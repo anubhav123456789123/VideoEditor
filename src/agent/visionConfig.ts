@@ -1,5 +1,5 @@
 // Vision-model bypass configuration: when the active agent model cannot see
-// images (e.g. DeepSeek family is text-only), a separately configured
+// images, a separately configured
 // vision-capable model describes user attachments and rendered timeline
 // frames as text that the main model can consume.
 //
@@ -10,7 +10,7 @@
 //   image input — a vision-capable main model sees images natively).
 // - disabled: never bypass, regardless of the main model's capabilities.
 import type { AgentModelChoice } from './model-selection';
-import type { LlmProvider, OpenAiApiMode } from './providerConfig';
+import type { LlmProvider } from './providerConfig';
 
 export type VisionModelMode = 'follow' | 'disabled' | 'custom';
 
@@ -19,14 +19,12 @@ export interface VisionModelConfig {
   /** custom mode: the vision provider (must already have a configured API key). */
   provider?: LlmProvider | null;
   model?: string | null;
-  openAiApiMode?: OpenAiApiMode | null;
 }
 
 /** A resolved vision model ready for description calls. */
 export interface VisionModelRef {
   provider: LlmProvider;
   model: string;
-  openAiApiMode: OpenAiApiMode;
 }
 
 const STORAGE_KEY = 'cc.visionModel.v1';
@@ -45,7 +43,6 @@ function readInitial(): VisionModelConfig {
       mode,
       provider: typeof parsed.provider === 'string' ? (parsed.provider as LlmProvider) : null,
       model: typeof parsed.model === 'string' && parsed.model ? parsed.model : null,
-      openAiApiMode: parsed.openAiApiMode === 'responses' ? 'responses' : null,
     };
   } catch {
     return { mode: 'follow' };
@@ -65,7 +62,6 @@ export function setVisionModelConfig(next: VisionModelConfig): void {
     mode: MODES.includes(next.mode) ? next.mode : 'follow',
     provider: typeof next.provider === 'string' ? next.provider : null,
     model: typeof next.model === 'string' && next.model ? next.model : null,
-    openAiApiMode: next.openAiApiMode === 'responses' ? 'responses' : null,
   };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
@@ -93,5 +89,5 @@ export function resolveVisionModel(
   if (active.capabilities.supportsImages.value) return null;
   if (config.mode !== 'custom') return null;
   if (!config.provider || !config.model) return null;
-  return { provider: config.provider, model: config.model, openAiApiMode: config.openAiApiMode ?? 'chat' };
+  return { provider: config.provider, model: config.model };
 }

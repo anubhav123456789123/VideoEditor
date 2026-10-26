@@ -22,7 +22,7 @@ const base: TranscriptionCheckpoint = {
   projectId: 'project-a',
   assetId: 'asset-a',
   sourceRevision: 'rev-a',
-  provider: 'assemblyai',
+  provider: 'local',
   providerStatus: 'submitted',
   providerJobId: 'job-1',
   uploadUrl: 'https://upload/1',

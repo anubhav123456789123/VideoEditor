@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { ASR_INFERENCE_CONTRACT } from '../../shared/asr-inference-contract';
 import { ASR_MODELS } from '../../shared/asr-models';
 import type { DesktopAsrRequest } from '../../shared/desktop-inference';
-import { TranscriptionError } from './assemblyai';
+import { TranscriptionError } from './transcription-source';
 import { localTranscribePathResumable } from './local-asr';
 
 const small = ASR_MODELS.find((model) => model.id === 'small')!;

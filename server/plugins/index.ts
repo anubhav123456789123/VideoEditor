@@ -21,8 +21,6 @@ import { extractAudioPlugin } from "./extract-audio.ts";
 import { hfProxyPlugin } from "./hf-proxy.ts";
 import { asrModelsPlugin } from "./asr-models.ts";
 import { modelPacksPlugin } from "./model-packs.ts";
-import { assemblyAiUploadPlugin } from "./assemblyai-upload.ts";
-import { transcriptionPlugin } from "./transcription.ts";
 import { extractFramesPlugin } from "./extract-frames.ts";
 import { sceneDetectionPlugin } from "./scene-detection.ts";
 import { autoGradePlugin } from "./auto-grade.ts";
@@ -30,12 +28,6 @@ import { mediaPreviewPlugin } from "./media-preview.ts";
 import { isolateVoicePlugin } from "./isolate-voice.ts";
 import { normalizeMediaPlugin } from "./normalize-media.ts";
 import { probeMediaPlugin } from "./probe-media.ts";
-import { imageGenerationPlugin } from "./image.ts";
-import { voiceGenerationPlugin } from "./voice.ts";
-import { aiVoiceOptions, transcriptionOptions } from "./media-provider-config.ts";
-import { soundGenerationPlugin } from "./sound.ts";
-import { musicGenerationPlugin } from "./music.ts";
-import { videoGenerationPlugin } from "./video.ts";
 import { e2bPlugin } from "./e2b.ts";
 import { subtitleExportPlugin } from "./subtitles.ts";
 import { generationProgressPlugin } from "./generation-jobs.ts";
@@ -46,10 +38,7 @@ import { skillFilesPlugin } from "./skill-files.ts";
 import { skillInstallPlugin } from "./skill-install.ts";
 import { skillExecPlugin } from "./skill-exec.ts";
 import { externalAgentPlugin } from "./external-agent.ts";
-import { codexAgentPlugin } from "./codex-agent.ts";
-import { copilotAgentPlugin } from "./copilot-agent.ts";
 import { claudeCodeAgentPlugin } from "./claude-code-agent.ts";
-import { xaiOauthPlugin } from "./xai-oauth.ts";
 import { llmProxyPlugin } from "./llm-proxy.ts";
 import { agentRunsPlugin } from "../agent-runs/routes.ts";
 import { localMediaPlugin } from "./local-media.ts";
@@ -68,7 +57,6 @@ export function serverPlugins(options: { projectStoreHttp?: boolean } = {}): Plu
     crossOriginIsolationPlugin(),
     storageLifecyclePlugin(),
     llmProxyPlugin(),
-    xaiOauthPlugin(),
     agentRunsPlugin(),
     localMediaPlugin(),
     skillFilesPlugin(),
@@ -82,8 +70,6 @@ export function serverPlugins(options: { projectStoreHttp?: boolean } = {}): Plu
     projectStorePlugin({ http: options.projectStoreHttp }),
     extensionStorePlugin(),
     externalAgentPlugin(),
-    codexAgentPlugin(),
-    copilotAgentPlugin(),
     claudeCodeAgentPlugin(),
     settingsPlugin(),
     exportStagePlugin(),
@@ -99,8 +85,6 @@ export function serverPlugins(options: { projectStoreHttp?: boolean } = {}): Plu
     hfProxyPlugin(),
     asrModelsPlugin(),
     modelPacksPlugin(),
-    assemblyAiUploadPlugin(),
-    transcriptionPlugin(transcriptionOptions()),
     extractFramesPlugin(),
     sceneDetectionPlugin(),
     autoGradePlugin(),
@@ -108,235 +92,6 @@ export function serverPlugins(options: { projectStoreHttp?: boolean } = {}): Plu
     isolateVoicePlugin(),
     normalizeMediaPlugin(),
     probeMediaPlugin(),
-    imageGenerationPlugin({
-      get baseUrl() {
-        return getKey("IMAGE_BASE_URL") || "https://api.openai.com";
-      },
-      get apiKey() {
-        return getKey("IMAGE_API_KEY") || getKey("OPENAI_API_KEY");
-      },
-      get geminiBaseUrl() {
-        return (
-          getKey("GEMINI_BASE_URL") ||
-          "https://generativelanguage.googleapis.com"
-        );
-      },
-      get geminiApiKey() {
-        return getKey("GEMINI_API_KEY");
-      },
-      get geminiModel() {
-        return getKey("GEMINI_IMAGE_MODEL") || "gemini-3.1-flash-image";
-      },
-      get minimaxBaseUrl() {
-        return getKey("MINIMAX_BASE_URL") || "https://api.minimaxi.com";
-      },
-      get minimaxApiKey() {
-        return getKey("MINIMAX_API_KEY");
-      },
-      get minimaxModel() {
-        return getKey("MINIMAX_IMAGE_MODEL") || "image-01";
-      },
-      get waveSpeedBaseUrl() {
-        return getKey("WAVESPEED_BASE_URL") || "https://api.wavespeed.ai";
-      },
-      get waveSpeedApiKey() {
-        return getKey("WAVESPEED_API_KEY");
-      },
-      get waveSpeedModel() {
-        return getKey("WAVESPEED_IMAGE_MODEL") || "wavespeed-ai/flux-dev";
-      },
-      get byteplusBaseUrl() {
-        return getKey("BYTEPLUS_BASE_URL") || "https://ark.ap-southeast.bytepluses.com/api/v3";
-      },
-      get byteplusApiKey() {
-        return getKey("BYTEPLUS_API_KEY");
-      },
-      get byteplusModel() {
-        return getKey("BYTEPLUS_IMAGE_MODEL") || "seedream-4-5-251128";
-      },
-      get xaiBaseUrl() {
-        return getKey("LLM_XAI_BASE_URL") || "https://api.x.ai/v1";
-      },
-      get xaiApiKey() {
-        return getKey("LLM_XAI_API_KEY");
-      },
-      get xaiImageModel() {
-        return getKey("XAI_IMAGE_MODEL") || "grok-imagine-image-2.0";
-      },
-    }),
-    voiceGenerationPlugin({
-      get elevenBaseUrl() {
-        return getKey("ELEVENLABS_BASE_URL") || "https://api.elevenlabs.io";
-      },
-      get elevenApiKey() {
-        return getKey("ELEVENLABS_API_KEY");
-      },
-      get elevenModel() {
-        return getKey("ELEVENLABS_TTS_MODEL") || "eleven_multilingual_v2";
-      },
-      get doubaoBaseUrl() {
-        return (
-          getKey("DOUBAO_TTS_BASE_URL") || "https://openspeech.bytedance.com"
-        );
-      },
-      get doubaoApiKey() {
-        return getKey("DOUBAO_TTS_API_KEY");
-      },
-      get doubaoModel() {
-        return getKey("DOUBAO_TTS_MODEL") || "seed-audio-1.0";
-      },
-      get doubaoVoiceId() {
-        return getKey("DOUBAO_TTS_VOICE_ID");
-      },
-      get minimaxBaseUrl() {
-        return getKey("MINIMAX_BASE_URL") || "https://api.minimaxi.com";
-      },
-      get minimaxApiKey() {
-        return getKey("MINIMAX_API_KEY");
-      },
-      get minimaxModel() {
-        return getKey("MINIMAX_TTS_MODEL") || "speech-2.6-hd";
-      },
-      get inworldBaseUrl() {
-        return getKey("INWORLD_TTS_BASE_URL") || "https://api.inworld.ai";
-      },
-      get inworldApiKey() {
-        return getKey("INWORLD_TTS_API_KEY");
-      },
-      get inworldModel() {
-        return getKey("INWORLD_TTS_MODEL") || "inworld-tts-2";
-      },
-      get fishAudioBaseUrl() {
-        return getKey("FISHAUDIO_TTS_BASE_URL") || "https://api.fish.audio";
-      },
-      get fishAudioApiKey() {
-        return getKey("FISHAUDIO_TTS_API_KEY");
-      },
-      get fishAudioModel() {
-        return getKey("FISHAUDIO_TTS_MODEL") || "s2.1-pro";
-      },
-      get speechifyBaseUrl() {
-        return getKey("SPEECHIFY_TTS_BASE_URL") || "https://api.sws.speechify.com";
-      },
-      get speechifyApiKey() {
-        return getKey("SPEECHIFY_TTS_API_KEY");
-      },
-      get speechifyModel() {
-        return getKey("SPEECHIFY_TTS_MODEL") || "simba-multilingual";
-      },
-      ai: aiVoiceOptions(),
-    }),
-    soundGenerationPlugin({
-      get baseUrl() {
-        return getKey("ELEVENLABS_BASE_URL") || "https://api.elevenlabs.io";
-      },
-      get apiKey() {
-        return getKey("ELEVENLABS_API_KEY");
-      },
-      get model() {
-        return getKey("ELEVENLABS_SOUND_MODEL") || "eleven_text_to_sound_v2";
-      },
-      get soniloBaseUrl() {
-        return getKey("SONILO_BASE_URL") || "https://api.sonilo.com";
-      },
-      get soniloApiKey() {
-        return getKey("SONILO_API_KEY");
-      },
-    }),
-    musicGenerationPlugin({
-      get baseUrl() {
-        return getKey("MUREKA_BASE_URL") || "https://api.mureka.ai";
-      },
-      get apiKey() {
-        return getKey("MUREKA_API_KEY");
-      },
-      get model() {
-        return getKey("MUREKA_MUSIC_MODEL") || "auto";
-      },
-      get minimaxBaseUrl() {
-        return getKey("MINIMAX_BASE_URL") || "https://api.minimaxi.com";
-      },
-      get minimaxApiKey() {
-        return getKey("MINIMAX_API_KEY");
-      },
-      get minimaxModel() {
-        return getKey("MINIMAX_MUSIC_MODEL") || "music-2.6";
-      },
-      get atlasBaseUrl() {
-        return getKey("ATLASCLOUD_API_BASE") || "https://api.atlascloud.ai/api/v1";
-      },
-      get atlasApiKey() {
-        return getKey("ATLASCLOUD_API_KEY");
-      },
-      get atlasModel() {
-        return getKey("ATLASCLOUD_MUSIC_MODEL") || "minimax/music-2.6";
-      },
-      get soniloBaseUrl() {
-        return getKey("SONILO_BASE_URL") || "https://api.sonilo.com";
-      },
-      get soniloApiKey() {
-        return getKey("SONILO_API_KEY");
-      },
-    }),
-    videoGenerationPlugin({
-      get seedanceBaseUrl() {
-        return (
-          getKey("SEEDANCE_BASE_URL") ||
-          "https://ark.cn-beijing.volces.com/api/v3"
-        );
-      },
-      get seedanceApiKey() {
-        return getKey("SEEDANCE_API_KEY");
-      },
-      get seedanceModel() {
-        return getKey("SEEDANCE_VIDEO_MODEL") || "doubao-seedance-2-0-260128";
-      },
-      get klingBaseUrl() {
-        return getKey("KLING_BASE_URL") || "https://api-singapore.klingai.com";
-      },
-      get klingApiKey() {
-        return getKey("KLING_API_KEY");
-      },
-      get klingModel() {
-        return getKey("KLING_VIDEO_MODEL") || "kling-v3-omni";
-      },
-      get minimaxBaseUrl() {
-        return getKey("MINIMAX_BASE_URL") || "https://api.minimaxi.com";
-      },
-      get minimaxApiKey() {
-        return getKey("MINIMAX_API_KEY");
-      },
-      get minimaxModel() {
-        return getKey("MINIMAX_VIDEO_MODEL") || "MiniMax-Hailuo-02";
-      },
-      get byteplusBaseUrl() {
-        return getKey("BYTEPLUS_BASE_URL") || "https://ark.ap-southeast.bytepluses.com/api/v3";
-      },
-      get byteplusApiKey() {
-        return getKey("BYTEPLUS_API_KEY");
-      },
-      get xaiBaseUrl() {
-        return getKey("LLM_XAI_BASE_URL") || "https://api.x.ai/v1";
-      },
-      get xaiApiKey() {
-        return getKey("LLM_XAI_API_KEY");
-      },
-      get xaiVideoModel() {
-        return getKey("XAI_VIDEO_MODEL") || "grok-imagine-video-1.5";
-      },
-      get ofoxBaseUrl() {
-        return getKey("LLM_OFOX_BASE_URL") || "https://api.ofox.ai/v1";
-      },
-      get ofoxApiKey() {
-        return getKey("LLM_OFOX_API_KEY");
-      },
-      get ofoxVideoModel() {
-        return getKey("OFOX_VIDEO_MODEL") || "bytedance/seedance-2.0-fast";
-      },
-      get byteplusModel() {
-        return getKey("BYTEPLUS_VIDEO_MODEL") || "seedance-1-5-pro-251215";
-      },
-    }),
     generationProgressPlugin(),
     subtitleExportPlugin(),
     stockSearchPlugin({

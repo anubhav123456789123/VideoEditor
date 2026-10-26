@@ -62,8 +62,6 @@ export async function buildPreparedServerRun(input: PrepareServerRunInput): Prom
     provider: choice.provider,
     model: choice.model,
     backend: choice.backend,
-    ...(choice.backend === 'copilot' && choice.reasoningEffort
-      ? { reasoningEffort: choice.reasoningEffort } : {}),
     cacheMode: settings.cacheMode,
     autonomousAcceptance: settings.autonomousAcceptance,
     maxAcceptanceIterations: settings.maxAcceptanceIterations,
@@ -72,7 +70,6 @@ export async function buildPreparedServerRun(input: PrepareServerRunInput): Prom
       choice.capabilities.contextWindowTokens.value,
       estimatedInputTokens,
     ),
-    openAiApiMode: choice.openAiApiMode,
     // Only the claude-code backend needs this: its tools run inside Claude
     // Code's own MCP client, where the composer's auto-apply toggle would
     // otherwise never reach the edit session. Every other backend executes

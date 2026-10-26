@@ -6,7 +6,7 @@ import {
   effectiveToolInvocationArgs,
   policyForTool,
 } from './execution-policy';
-import { executeOpenChatCutTool } from './codex/runtime';
+import { executeOpenChatCutTool } from './tool-execution';
 import {
   digestAgentToolArgs, startAgentRun, type AgentRunRecorder,
 } from './runtime-ledger';
@@ -129,12 +129,14 @@ async function verifyExplicitTranscriptionProviders(): Promise<void> {
 }
 
 async function verifySettingBackedTranscriptionProvider(saved: Record<string, string>): Promise<void> {
+  // A stale cloud choice saved by an older build cannot leave the machine:
+  // the on-device engine is materialized into the invocation before execution.
   saved['cc.transcriptionProvider'] = 'assemblyai';
   const settingBackedArgs = effectiveToolInvocationArgs('transcribe_track', { track: 'A2' });
   assert.deepEqual(
     settingBackedArgs,
-    { track: 'A2', provider: 'assemblyai' },
-    'saved provider is materialized into the effective invocation before execution',
+    { track: 'A2', provider: 'local' },
+    'the local provider is materialized into the effective invocation before execution',
   );
   let recordedArgs: Record<string, unknown> | undefined;
   const runtimeRecorder = {

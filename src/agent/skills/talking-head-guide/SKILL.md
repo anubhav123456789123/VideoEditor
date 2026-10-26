@@ -429,19 +429,19 @@ Before creating the MG, make four linked editor decisions. They prepare the acti
 
 #### Only for generator workflows that require a brief
 
-Use this subsection only when the active Motion Graphics workflow explicitly asks you to write a generation brief or request for another model or generator, such as Gemini / motion-graphic-gen.
+Use this subsection only when the active Motion Graphics workflow explicitly asks you to write a generation brief or request for another model or generator, such as motion-graphic-gen.
 
-Skip this subsection for direct-authoring workflows. If you are creating or editing JSX yourself with `create_motion_graphic_from_code` / `edit_asset`, do not use `referenceAssetIds`, `:template`, `:style`, role anchors, or Gemini brief language.
+Skip this subsection for direct-authoring workflows. If you are creating or editing JSX yourself with `create_motion_graphic_from_code` / `edit_asset`, do not use `referenceAssetIds`, `:template`, `:style`, role anchors, or generator brief language.
 
 For generator workflows, carry the visual language into the tool call. For now, templates are generation references, not direct-apply targets. Template refs from a Design Style are no different from any other template ID. For new MG assets, pass one code reference source: same-role role anchor with `referenceAssetIds: ["<roleAnchorAssetId>:template"]` only when the visual job, structure, and canvas role are the same; otherwise use the matched template ID directly, for example `referenceAssetIds: ["<templateId>:style"]`. If no template matches, write the confirmed Direction in the brief and use any accepted role anchor only for the same role. Template slot counts are not user constraints: if the user asks for more/fewer bars, rows, items, or data points than the template shows, generate a new structure instead of asking them to fit the slots.
 
-When a template or role anchor is passed, keep the Gemini brief focused on content, role / broad form, background, and frame constraints. Let the reference carry detailed style and motion language.
+When a template or role anchor is passed, keep the brief focused on content, role / broad form, background, and frame constraints. Let the reference carry detailed style and motion language.
 
 Map the four shared decisions into a generator brief like this:
 
 - **Content** -> `Content` in the brief.
-- **Timing** -> timeline start, plus internal `Timing` only when the MG has its own beats. Internal `Timing` values say _when_ each element appears, not _how_ it moves; leave the motion style to Gemini.
-- **Form and placement** -> `Size & shape` in the brief, not final canvas placement. Do not write final `left`, `top`, `right`, `bottom`, coordinates, or placement anchors such as "lower-left" / "top-right" into the Gemini brief.
+- **Timing** -> timeline start, plus internal `Timing` only when the MG has its own beats. Internal `Timing` values say _when_ each element appears, not _how_ it moves; leave the motion style to the generator.
+- **Form and placement** -> `Size & shape` in the brief, not final canvas placement. Do not write final `left`, `top`, `right`, `bottom`, coordinates, or placement anchors such as "lower-left" / "top-right" into the brief.
 - **Background** -> `Background: transparent` or `Background: opaque`.
 
 #### 1. Content
@@ -520,7 +520,7 @@ B-roll depends on having suitable footage and adds production effort — treat i
 
 ### Sources
 
-Footage can come from three places: clips already in the project library, stock via `search_stock_media` then `push_asset` with the returned import args, or AI generation via the `video-gen` skill (Seedance / Kling / Hailuo when configured). Pick based on the user's need; if unclear, align with the user upfront.
+Footage can come from two places: clips already in the project library, or stock via `search_stock_media` then `push_asset` with the returned import args. Pick based on the user's need; if unclear, align with the user upfront.
 
 ### How to place
 

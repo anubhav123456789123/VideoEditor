@@ -10,7 +10,7 @@ import type { CustomSkill } from '../persist/skillStore';
 import type { SkillDefinition } from '../agent/skills/skill-types';
 import { theme } from '../theme';
 
-const BUILTIN_IDS = new Set(['long-video-to-shorts', 'multi-clips-to-reels', 'ai-cinematic-short-film', 'product-ad-video-script', 'explainer-video', 'motion-graphic-placement', 'storyboard-shot-breakdown', 'video-thumbnail-generator', 'skill-creator']);
+const BUILTIN_IDS = new Set(['long-video-to-shorts', 'multi-clips-to-reels', 'product-ad-video-script', 'explainer-video', 'motion-graphic-placement', 'storyboard-shot-breakdown', 'video-thumbnail-generator', 'skill-creator']);
 
 export function SkillsTabPanel({
   creativeMode,

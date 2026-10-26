@@ -5,14 +5,11 @@ import {
 } from 'ai';
 import {
   normalizeLlmProvider,
-  resolveModelRequestPolicy,
   type LlmProvider,
-  type OpenAiApiMode,
 } from '../../shared/llm-providers';
 import {
   MODEL_CAPABILITY_OVERRIDES_KEY,
   parseModelCapabilityOverrides,
-  resolveCopilotModelCapabilities,
   resolveModelCapabilities,
   type ModelBackend,
   type ModelCapabilities,
@@ -78,8 +75,6 @@ export interface ServerRunInput {
   readonly backend?: string;
   readonly provider: string;
   readonly model: string;
-  readonly reasoningEffort?: string | null;
-  readonly openAiApiMode: OpenAiApiMode;
   readonly cacheMode: 'short' | 'long';
   readonly maxOutputTokens: number;
   readonly autonomousAcceptance: boolean;
@@ -93,7 +88,7 @@ export interface ServerRunInput {
 
 /** Narrow a persisted or request-supplied backend string to the known set. */
 export function serverRunBackend(value: unknown): ModelBackend {
-  return value === 'codex' || value === 'copilot' || value === 'claude-code' ? value : 'api';
+  return value === 'claude-code' ? value : 'api';
 }
 
 type ServerTurnInput = Omit<ServerContextInput, 'schemas'> & {
@@ -175,7 +170,7 @@ async function runServerTurnOnce(
     input.activation,
   );
   pushRunEvent(input.run, 'text-start', {});
-  const options = serverProviderOptions(input.provider, input.apiMode, input.cacheMode);
+  const options = serverProviderOptions(input.provider, input.cacheMode);
   const maxOutputTokens = input.overflowStage === 'reduced-output'
     ? Math.max(4_096, Math.floor(input.maxOutputTokens / 4))
     : input.maxOutputTokens;
@@ -235,40 +230,11 @@ export function resolveServerRunCapabilities(
   );
 }
 
-/**
- * Copilot publishes exact per-model limits, so prefer them over the bundled
- * catalog; fall back to the catalog path when the runtime is unreachable.
- */
-async function resolveCopilotRunCapabilities(
-  provider: LlmProvider,
-  modelId: string,
-): Promise<ModelCapabilities> {
-  const overrides = parseModelCapabilityOverrides(getKey(MODEL_CAPABILITY_OVERRIDES_KEY));
-  const facts = await (await import('../copilot/client')).copilotModelFacts(modelId)
-    .catch(() => null);
-  if (!facts) return resolveServerRunCapabilities(provider, 'copilot', modelId);
-  return resolveCopilotModelCapabilities(
-    { backend: 'copilot', provider, modelId },
-    {
-      contextWindowTokens: facts.contextWindowTokens,
-      maxInputTokens: facts.maxInputTokens,
-      maxOutputTokens: facts.maxOutputTokens,
-      supportsTools: facts.supportsTools,
-      supportsVision: facts.supportsVision,
-      reasoningEfforts: facts.supportedReasoningEfforts,
-    },
-    overrides,
-  );
-}
-
 async function createExecutionPlan(run: ServerRun, input: ServerRunInput) {
   const provider = normalizeLlmProvider(input.provider);
-  const apiMode = resolveModelRequestPolicy(provider, input.openAiApiMode, input.cacheMode).apiMode;
   const backend = serverRunBackend(input.backend);
   const requested = resolveServerRunToolCatalog(input.tools, run.askOnly);
-  const capabilities = backend === 'copilot'
-    ? await resolveCopilotRunCapabilities(provider, input.model)
-    : resolveServerRunCapabilities(provider, backend, input.model);
+  const capabilities = resolveServerRunCapabilities(provider, backend, input.model);
   const basePrompt = buildServerRunPrompt({
     ...input,
     projectId: run.projectId,
@@ -310,20 +276,14 @@ async function createExecutionPlan(run: ServerRun, input: ServerRunInput) {
   return {
     backend,
     provider,
-    apiMode,
     capabilities,
     maxOutputTokens,
     maxInputTokens,
     activation,
     prompt,
-    model: backend === 'codex' || backend === 'copilot' || backend === 'claude-code'
+    model: backend === 'claude-code'
       ? undefined
-      : createServerLanguageModel(
-          provider,
-          input.model,
-          apiMode,
-          input.origin,
-        ),
+      : createServerLanguageModel(provider, input.model, input.origin),
   };
 }
 
@@ -356,24 +316,15 @@ async function executeRunTurns(
       approvalMode: input.approvalMode,
     };
     const outcome = await runServerTurnWithRetry(run, turn + 1, signal, () =>
-      plan.backend === 'codex'
-        ? (async () => (await import('./codex-turn'))
-          .executeServerCodexTurn(subprocessTurnInput))()
-        : plan.backend === 'claude-code'
-          ? (async () => (await import('./claude-code-turn'))
-            .executeServerClaudeCodeTurn(subprocessTurnInput))()
-          : plan.backend === 'copilot'
-            ? (async () => (await import('./copilot-turn')).executeServerCopilotTurn({
-              ...subprocessTurnInput,
-              reasoningEffort: input.reasoningEffort ?? null,
-            }))()
-            : executeServerTurn({
+      plan.backend === 'claude-code'
+        ? (async () => (await import('./claude-code-turn'))
+          .executeServerClaudeCodeTurn(subprocessTurnInput))()
+        : executeServerTurn({
               run,
               messages,
               instructions: plan.prompt.instructions,
               model: plan.model!,
               provider: plan.provider,
-              apiMode: plan.apiMode,
               cacheMode: input.cacheMode,
               contextWindowTokens: plan.capabilities.contextWindowTokens.value,
               contextWindowEstimated: plan.capabilities.contextWindowTokens.estimated,

@@ -1,6 +1,6 @@
 ---
 name: widget-forms
-description: Use when the agent should ask the user for structured input with an in-chat form, including single-select, multi-select, text fields, style pickers, or voice audition choices.
+description: Use when the agent should ask the user for structured input with an in-chat form, including single-select, multi-select, text fields, style pickers, or audio audition choices.
 ---
 
 # Widget Forms
@@ -32,7 +32,7 @@ language.
 - Native `<form-multi>` -> `{ type: "multi", variant: "default" }`
 - Native `<form-text>` / `<form-textarea>` -> `{ type: "text" }`
 - Native `<form-visual>` -> `{ type: "single", variant: "visual" }`
-- Voice audition cards -> `{ type: "single", variant: "voice" }`
+- Audio audition cards -> `{ type: "single", variant: "voice" }`
 - Native start-scenario cards -> `{ type: "single", variant: "scenario" }`
 
 ## Form Copy Tone
@@ -94,7 +94,7 @@ For choice fields:
 - For ordinary single-select and multi-select cards (`variant: "default"`), keep
   options label-only. Do not add per-option `description` unless the user cannot
   distinguish the choices from labels alone.
-- Use `description` mainly for voice cards. Visual style cards should usually
+- Use `description` mainly for audio audition cards. Visual style cards should usually
   use only `preview` + `label`.
 - When an off-list answer is acceptable, add an explicit option with
   `id: "__other__"` and a `label` in the same language as the rest of the form,
@@ -110,23 +110,19 @@ For visual cards:
   `{ id: preset.presetId, label: preset.name }` (no thumbnails in this build).
 - Never hardcode catalog preset ids unless the user already selected one.
 
-For voice cards:
+For audio audition cards (`variant: "voice"`):
 
-- Use `audioUrl` for the sample file.
-- Prefer the documented sample path such as `/voice-samples/doubao-liuchang.mp3`
-  or a public HTTPS URL. Do not pass localhost sample URLs; MCP host iframes do
+- Use `audioUrl` for the sample file, such as a music bed or sound effect the
+  user is choosing between.
+- Use a public HTTPS URL. Do not pass localhost sample URLs; MCP host iframes do
   not reliably resolve editor-local media.
-- Keep user-visible descriptions provider-neutral. Describe the voice the same
-  way the native OpenChatCut audition UI does: gender / age range / tone / use case,
-  such as `Female / young / friendly, general` or `男 / 中年 / 低沉知识解说`.
-  Do not show provider names like ElevenLabs or Doubao in option descriptions.
-- Keep the option `id` equal to the provider voice id needed by `submit_voice`.
+- Keep the option `id` equal to the asset or library id the follow-up tool needs.
 
 For native start-scenario cards:
 
 - Use this when the user should choose which OpenChatCut video workflow to start,
   such as talking-head editing, MG animation, long-video-to-shorts,
-  product/app promo, AI short film, or explainer video.
+  product/app promo, beat-sync montage, or explainer video.
 - Present these as common video needs/scenarios, not as the only possible video
   workflows. The form must also let the user describe a different video need.
 - Use exactly one single-select field with `variant: "scenario"`.
@@ -139,19 +135,18 @@ For native start-scenario cards:
   and pass those localized values in the option objects. Preserve OpenChatCut
   product terms and workflow meaning; do not add new requirements. Use
   `submitPrompt` for the translated starter prompt. This override is specific to
-  `variant: "scenario"`; ordinary option cards, voice cards, and visual style
+  `variant: "scenario"`; ordinary option cards, audio cards, and visual style
   cards already get their visible text from the values you pass.
 - Do not provide custom `preview` or `audioUrl`; the backend fills the native
   first-screen preview image.
 - Canonical ids: `talking-head`, `motion-graphics`, `long-video-to-shorts`,
-  `app-promo`, `ai-cinematic-short-film`, `explainer`, plus `__other__` for a
+  `app-promo`, `explainer`, plus `__other__` for a
   free-form video need.
 - Example options:
   `{ "id": "talking-head", "label": "Talking Head Editing" }`,
   `{ "id": "motion-graphics", "label": "Motion Graphics" }`,
   `{ "id": "long-video-to-shorts", "label": "Long Video to Shorts" }`,
   `{ "id": "app-promo", "label": "Product / App Promo" }`,
-  `{ "id": "ai-cinematic-short-film", "label": "AI Short Film" }`,
   `{ "id": "explainer", "label": "Explainer Video" }`,
   `{ "id": "__other__", "label": "Something else" }`.
 

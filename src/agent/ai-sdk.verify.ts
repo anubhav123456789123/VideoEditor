@@ -4,7 +4,6 @@ import {
   generateText,
   jsonSchema,
   simulateReadableStream,
-  streamText,
   tool,
   type ModelMessage,
   type ToolResultPart,
@@ -16,7 +15,6 @@ import {
   getLanguageModel,
   getLanguageModelProviderOptions,
   normalizeLlmProvider,
-  normalizeOpenAiApiMode,
   providerApiPath,
 } from './client';
 import { LLM_PROVIDER_PRESETS } from '../../shared/llm-providers';
@@ -42,38 +40,12 @@ import { INITIAL } from '../editor/initial';
 import { docFromTimeline } from '../persist/projectStore';
 import { isFailedToolResult, ToolFailureTracker } from './toolFailure';
 
-assert.equal(normalizeLlmProvider('openai'), 'openai');
-assert.equal(normalizeLlmProvider('KIMI'), 'kimi');
-assert.equal(normalizeLlmProvider('qwen'), 'qwen');
-assert.equal(normalizeLlmProvider('glm'), 'glm');
-assert.equal(normalizeLlmProvider('OpenRouter'), 'openrouter');
-assert.equal(normalizeLlmProvider('OFox'), 'ofox');
-assert.equal(normalizeLlmProvider('OrcaRouter'), 'orcarouter');
-assert.equal(normalizeLlmProvider('Requesty'), 'requesty');
-assert.equal(normalizeLlmProvider('CheaperInference'), 'cheaperinference');
+// Claude is the only provider: every stored or requested value resolves to it.
+assert.equal(normalizeLlmProvider('anthropic'), 'anthropic');
+assert.equal(normalizeLlmProvider('openai'), 'anthropic');
 assert.equal(normalizeLlmProvider('unexpected'), 'anthropic');
-assert.equal(defaultModelForProvider('anthropic'), 'claude-fable-5');
-assert.equal(defaultModelForProvider('openai'), 'gpt-5');
-assert.equal(defaultModelForProvider('kimi'), 'kimi-k3');
-assert.equal(defaultModelForProvider('qwen'), 'qwen-plus');
-assert.equal(defaultModelForProvider('glm'), 'glm-5.2');
-assert.equal(defaultModelForProvider('openrouter'), 'openrouter/auto');
-assert.equal(defaultModelForProvider('ofox'), 'deepseek/deepseek-v3.2');
-assert.equal(defaultModelForProvider('orcarouter'), 'orcarouter/auto');
-assert.equal(defaultModelForProvider('requesty'), 'claude-sonnet-5');
-assert.equal(defaultModelForProvider('cheaperinference'), 'gpt-5.4-mini');
+assert.equal(defaultModelForProvider('anthropic'), 'claude-opus-5-5');
 assert.equal(providerApiPath('anthropic'), '/messages');
-assert.equal(providerApiPath('openai'), '/responses');
-assert.equal(providerApiPath('openai', 'chat'), '/chat/completions');
-assert.equal(providerApiPath('xai-oauth', 'chat'), '/responses');
-assert.equal(providerApiPath('kimi'), '/chat/completions');
-assert.equal(providerApiPath('gemini'), '/models');
-assert.equal(providerApiPath('openrouter'), '/chat/completions');
-assert.equal(providerApiPath('ofox'), '/chat/completions');
-assert.equal(providerApiPath('orcarouter'), '/chat/completions');
-assert.equal(providerApiPath('requesty'), '/chat/completions');
-assert.equal(providerApiPath('cheaperinference'), '/chat/completions');
-
 const strippedVisualMessages = withoutModelImages([{
   role: 'user',
   content: [
@@ -89,57 +61,20 @@ assert.equal(strippedVisualContent.some((part) => part.mediaType === 'applicatio
   'non-image files are not conflated with image capability');
 assert.equal(strippedVisualContent.some((part) => String(part.text).includes('omitted')), true,
   'the model receives an explicit omission notice');
-assert.equal(normalizeOpenAiApiMode('chat'), 'chat');
-assert.equal(normalizeOpenAiApiMode('unexpected'), 'responses');
 assert.equal((await getLanguageModel('anthropic', 'test-model')).provider, 'anthropic.messages');
-assert.equal((await getLanguageModel('openai', 'test-model')).provider, 'openai.responses');
-assert.equal((await getLanguageModel('openai', 'test-model', 'chat')).provider, 'openai.chat');
-assert.equal((await getLanguageModel('kimi', 'test-model')).provider, 'moonshotai.chat');
-assert.equal((await getLanguageModel('gemini', 'test-model')).provider, 'google.generative-ai');
-assert.equal((await getLanguageModel('openrouter', 'openrouter/auto')).provider, 'openrouter.chat');
-assert.equal((await getLanguageModel('ofox', 'deepseek/deepseek-v3.2')).provider, 'ofox.chat');
-assert.equal((await getLanguageModel('orcarouter', 'orcarouter/auto')).provider, 'orcarouter.chat');
-assert.equal((await getLanguageModel('requesty', 'openai/gpt-4o-mini')).provider, 'requesty.chat');
-assert.equal((await getLanguageModel('cheaperinference', 'gpt-5.4-mini')).provider, 'cheaperinference.chat');
-assert.deepEqual(getLanguageModelProviderOptions('openai'), { openai: { store: false } });
-assert.equal(getLanguageModelProviderOptions('openai', 'chat'), undefined);
-assert.deepEqual(getLanguageModelProviderOptions('minimax'), {
-  minimax: { reasoning_split: true },
-});
-assert.deepEqual(getLanguageModelProviderOptions('anthropic', 'responses', 'short'), {
+assert.deepEqual(getLanguageModelProviderOptions('anthropic', 'short'), {
   anthropic: { cacheControl: { type: 'ephemeral' } },
 });
-assert.deepEqual(getLanguageModelProviderOptions('anthropic', 'responses', 'long'), {
+assert.deepEqual(getLanguageModelProviderOptions('anthropic', 'long'), {
   anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } },
 });
 assert.equal(cacheTtlMsForProvider('anthropic', 'short'), 5 * 60 * 1000);
 assert.equal(cacheTtlMsForProvider('anthropic', 'long'), 60 * 60 * 1000);
-assert.equal(cacheTtlMsForProvider('openai', 'long'), undefined);
-assert.equal(
-  new Set(LLM_PROVIDER_PRESETS.map(({ id }) => id)).size,
-  LLM_PROVIDER_PRESETS.length,
-);
+assert.equal(LLM_PROVIDER_PRESETS.length, 1);
 for (const preset of LLM_PROVIDER_PRESETS) {
   assert.equal(normalizeLlmProvider(preset.id), preset.id);
   assert.equal(defaultModelForProvider(preset.id), preset.defaultModel);
   assert.doesNotThrow(() => new URL(preset.baseUrl));
-  // Providers with official exclusive packages use the official package (provider id varies from package to package); the rest are openai-compatible.
-  // The xAI subscription provider rides the OpenAI Responses adapter by design.
-  const DEDICATED_PROVIDER_IDS: Record<string, string> = {
-    anthropic: 'anthropic.messages',
-    openai: 'openai.responses',
-    gemini: 'google.generative-ai',
-    kimi: 'moonshotai.chat',
-    qwen: 'alibaba.chat',
-    deepseek: 'deepseek.chat',
-    mistral: 'mistral.chat',
-    xai: 'xai.responses',
-    'xai-oauth': 'openai.responses',
-  };
-  assert.equal(
-    (await getLanguageModel(preset.id, 'test-model')).provider,
-    DEDICATED_PROVIDER_IDS[preset.id] ?? `${preset.id}.chat`,
-  );
 }
 
 // Exercise the real AI SDK provider serializers without making a network call.
@@ -163,19 +98,11 @@ globalThis.fetch = async (input, init) => {
   });
 };
 try {
-  for (const [provider, model, openAiApiMode] of [
-    ['anthropic', 'claude-test', undefined],
-    ['openai', 'gpt-test', undefined],
-    ['openai', 'gpt-chat-test', 'chat'],
-    ['kimi', 'kimi-test', undefined],
-    ['xai', 'grok-test', undefined],
-  ] as const) {
-    await assert.rejects(generateText({
-      model: await getLanguageModel(provider, model, openAiApiMode),
-      prompt: 'ping',
-      maxRetries: 0,
-    }));
-  }
+  await assert.rejects(generateText({
+    model: await getLanguageModel('anthropic', 'claude-test'),
+    prompt: 'ping',
+    maxRetries: 0,
+  }));
 } finally {
   globalThis.fetch = originalFetch;
 }
@@ -185,72 +112,7 @@ assert.deepEqual(serialized.map(({ url, body, provider }) => ({
   provider,
 })), [
   { path: '/llm/messages', model: 'claude-test', provider: 'anthropic' },
-  { path: '/llm/responses', model: 'gpt-test', provider: 'openai' },
-  { path: '/llm/chat/completions', model: 'gpt-chat-test', provider: 'openai' },
-  { path: '/llm/chat/completions', model: 'kimi-test', provider: 'kimi' },
-  { path: '/llm/responses', model: 'grok-test', provider: 'xai' },
 ]);
-
-// #187: compatible gateways send empty metadata on continuation tool deltas.
-// Exercise the real provider parsers, including interleaved calls and split UTF-8.
-{
-  const chunk = (toolCalls: unknown[], finishReason: string | null = null) => ({
-    id: 'completion-187', object: 'chat.completion.chunk', created: 1, model: 'step-5-preview',
-    choices: [{ index: 0, delta: { role: 'assistant', content: '', tool_calls: toolCalls }, finish_reason: finishReason }],
-  });
-  const events = [
-    chunk([{ index: 0, id: 'call-0', type: 'function', function: { name: 'read_project', arguments: '{"view":' } }]),
-    chunk([{ index: 1, id: 'call-1', type: 'function', function: { name: 'read_project', arguments: '{"view":' } }]),
-    chunk([{ index: 1, id: '', type: '', function: { name: '', arguments: '"概览"}' } }]),
-    chunk([{ index: 0, function: { arguments: '"timeline"}' } }]),
-    chunk([], 'tool_calls'),
-  ];
-  let continuationType = '';
-  globalThis.fetch = async () => {
-    const fixture = structuredClone(events);
-    fixture[2]!.choices[0]!.delta.tool_calls = [{
-      index: 1, id: '', type: continuationType, function: { name: '', arguments: '"概览"}' },
-    }];
-    const bytes = new TextEncoder().encode(fixture.map((event) => `data: ${JSON.stringify(event)}\r\n\r\n`).join('') + 'data: [DONE]\r\n\r\n');
-    return new Response(new ReadableStream<Uint8Array>({
-      start(controller) {
-        for (let i = 0; i < bytes.length; i += 7) controller.enqueue(bytes.slice(i, i + 7));
-        controller.close();
-      },
-    }), { headers: { 'content-type': 'text/event-stream' } });
-  };
-  const collect = async (provider: 'openai' | 'stepfun') => {
-    const result = streamText({
-      model: await getLanguageModel(provider, 'step-5-preview', 'chat'),
-      prompt: 'inspect both views',
-      maxRetries: 0,
-      onError: () => {}, // The invalid-type case below asserts the emitted error.
-      tools: { read_project: tool({ inputSchema: jsonSchema<{ view: string }>({
-        type: 'object', properties: { view: { type: 'string' } }, required: ['view'],
-      }) }) },
-    });
-    const parts = [];
-    for await (const part of result.fullStream) parts.push(part);
-    return parts;
-  };
-  try {
-    for (const provider of ['openai', 'stepfun'] as const) {
-      const parts = await collect(provider);
-      assert.deepEqual(parts.filter((part) => part.type === 'error'), [], `${provider}: blank continuation types must not abort the stream`);
-      assert.deepEqual(parts.filter((part) => part.type === 'tool-call').map((part) => ({
-        id: part.toolCallId, name: part.toolName, input: part.input,
-      })), [
-        { id: 'call-0', name: 'read_project', input: { view: 'timeline' } },
-        { id: 'call-1', name: 'read_project', input: { view: '概览' } },
-      ]);
-    }
-    continuationType = 'invalid-tool-type';
-    assert.ok((await collect('openai')).some((part) => part.type === 'error'),
-      'nonempty invalid types must still fail SDK validation');
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
-}
 
 const legacy = normalizeLlmMessages([
   { role: 'user', content: '把第一段放到时间线' },
@@ -292,20 +154,6 @@ assert.deepEqual(legacy, [
   },
 ]);
 
-const portable = prepareMessagesForProvider([
-  {
-    role: 'assistant',
-    providerOptions: { anthropic: { container: 'abc' } },
-    content: [
-      { type: 'reasoning', text: 'hidden', providerOptions: { anthropic: { signature: 'sig' } } },
-      { type: 'text', text: 'visible', providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } } },
-    ],
-  },
-], 'anthropic', 'openai');
-
-assert.deepEqual(portable, [
-  { role: 'assistant', content: [{ type: 'text', text: 'visible' }] },
-]);
 assert.deepEqual(makeMessagesPortable([
   {
     role: 'assistant',
@@ -316,73 +164,6 @@ assert.deepEqual(makeMessagesPortable([
   },
 ]), [
   { role: 'assistant', content: [{ type: 'text', text: 'visible' }] },
-]);
-
-// OpenAI Chat Completions only supports vision input on user messages. If a
-// tool-result file stays inside the tool message, the provider serializes its
-// base64 bytes as plain text and can exhaust the model context window.
-const chatVisionHistory = makeMessagesPortable([
-  {
-    role: 'assistant',
-    content: [{
-      type: 'tool-call',
-      toolCallId: 'frame_call',
-      toolName: 'view_asset_frames',
-      input: { assetId: 'asset-a' },
-    }],
-  },
-  {
-    role: 'tool',
-    content: [{
-      type: 'tool-result',
-      toolCallId: 'frame_call',
-      toolName: 'view_asset_frames',
-      output: {
-        type: 'content',
-        value: [
-          {
-            type: 'file',
-            data: { type: 'data', data: 'jpeg-base64' },
-            mediaType: 'image/jpeg',
-            filename: 'frame-0.jpg',
-          },
-          { type: 'text', text: 'frame 0 metadata' },
-        ],
-      },
-    }],
-  },
-], 'chat');
-assert.deepEqual(chatVisionHistory, [
-  {
-    role: 'assistant',
-    content: [{
-      type: 'tool-call',
-      toolCallId: 'frame_call',
-      toolName: 'view_asset_frames',
-      input: { assetId: 'asset-a' },
-    }],
-  },
-  {
-    role: 'tool',
-    content: [{
-      type: 'tool-result',
-      toolCallId: 'frame_call',
-      toolName: 'view_asset_frames',
-      output: { type: 'text', value: 'frame 0 metadata' },
-    }],
-  },
-  {
-    role: 'user',
-    content: [
-      { type: 'text', text: 'Rendered media returned by the preceding tool calls:' },
-      {
-        type: 'file',
-        data: { type: 'data', data: 'jpeg-base64' },
-        mediaType: 'image/jpeg',
-        filename: 'frame-0.jpg',
-      },
-    ],
-  },
 ]);
 
 const compatibleAssistant: ModelMessage = {
@@ -599,7 +380,7 @@ for (const protocol of ['openai', 'anthropic', 'google']) {
   assert.equal(shouldRetryCompatibleMediaRequest({ ...retryable400, protocol }), false);
 }
 
-assert.deepEqual(makeMessagesPortable([compatibleFileToolA], 'responses'), [{
+assert.deepEqual(makeMessagesPortable([compatibleFileToolA]), [{
   role: 'tool',
   content: [{
     type: 'tool-result',
@@ -618,119 +399,11 @@ assert.deepEqual(makeMessagesPortable([compatibleFileToolA], 'responses'), [{
 }]);
 const nativeMediaHistory = prepareMessagesForProvider(
   [compatibleFileToolA],
-  'gemini',
-  'gemini',
+  'anthropic',
+  'anthropic',
 );
 assert.equal(nativeMediaHistory.length, 1);
 assert.strictEqual(nativeMediaHistory[0], compatibleFileToolA);
-
-// ── Gemini (official @ai-sdk/google, native API) thought_signature full loop regression (#6):
-// The first hop native response carries parts[].thoughtSignature → captured into response messages →
-// Replayed by prepareMessagesForProvider with the same provider → the functionCall part of the second-hop request must
-// Bring back the same signature (Strong verification in Gemini 3 cycle, if lost, it will be 400).
-{
-  const urls: string[] = [];
-  const headerKeys: string[] = [];
-  const requests: Record<string, unknown>[] = [];
-  const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
-  const google = createGoogleGenerativeAI({
-    baseURL: 'https://example.invalid/v1beta',
-    apiKey: 'test-key',
-    fetch: async (input, init) => {
-      urls.push(String(input));
-      headerKeys.push(String(new Headers(init?.headers).get('x-goog-api-key')));
-      requests.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
-      if (requests.length === 1) {
-        return new Response(JSON.stringify({
-          candidates: [{
-            content: {
-              role: 'model',
-              parts: [{
-                functionCall: { name: 'edit_track', args: { trackId: 'V1' } },
-                thoughtSignature: 'live-signature',
-              }],
-            },
-            finishReason: 'STOP',
-          }],
-          usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
-        }), { status: 200, headers: { 'content-type': 'application/json' } });
-      }
-      return new Response(JSON.stringify({ error: { code: 400, message: 'stop after capture' } }), {
-        status: 400, headers: { 'content-type': 'application/json' },
-      });
-    },
-  });
-  const first = await generateText({
-    model: google('gemini-test'),
-    prompt: 'switch track',
-    tools: { edit_track: { inputSchema: jsonSchema({ type: 'object' }) } },
-    maxRetries: 0,
-  });
-  assert.ok(urls[0].includes('/models/gemini-test:generateContent'), '原生模型路径');
-  assert.equal(headerKeys[0], 'test-key', '鉴权走 x-goog-api-key(代理端将覆盖为真实 key)');
-  const captured = first.response.messages.find((m) => m.role === 'assistant');
-  assert.ok(captured, 'first hop yields an assistant message');
-  // Second hop: Replay + tool results through our history pipeline (same vendor reserved providerOptions)
-  await assert.rejects(generateText({
-    model: google('gemini-test'),
-    messages: prepareMessagesForProvider([
-      ...first.response.messages,
-      {
-        role: 'tool',
-        content: [{
-          type: 'tool-result',
-          toolCallId: (captured!.content as Array<{ type: string; toolCallId?: string }>)
-            .find((p) => p.type === 'tool-call')!.toolCallId!,
-          toolName: 'edit_track',
-          output: { type: 'text', value: '{"ok":true}' },
-        }],
-      },
-    ], 'gemini', 'gemini'),
-    maxRetries: 0,
-  }));
-  const contents = requests[1].contents as Array<{ role: string; parts: Array<Record<string, unknown>> }>;
-  const fcPart = contents.flatMap((c) => c.parts).find((p) => p.functionCall);
-  assert.ok(fcPart, 'replayed request contains the functionCall part');
-  assert.equal(fcPart!.thoughtSignature, 'live-signature',
-    'captured thought_signature must survive into the replayed functionCall part');
-}
-
-// ── kimi/qwen/deepseek/mistral Official package type: {base}/chat/completions + Bearer,
-// Consistent with the /llm proxy contract (the proxy overwrites the real key according to the provider); the payload contains model+messages. ──
-{
-  const { createMoonshotAI } = await import('@ai-sdk/moonshotai');
-  const { createAlibaba } = await import('@ai-sdk/alibaba');
-  const { createDeepSeek } = await import('@ai-sdk/deepseek');
-  const { createMistral } = await import('@ai-sdk/mistral');
-  const cases: Array<[string, (o: { baseURL: string; apiKey: string; fetch: typeof fetch }) => (m: string) => Parameters<typeof generateText>[0]['model']]> = [
-    ['moonshotai', createMoonshotAI],
-    ['alibaba', createAlibaba],
-    ['deepseek', createDeepSeek],
-    ['mistral', createMistral],
-  ];
-  for (const [label, create] of cases) {
-    let url = '';
-    let auth = '';
-    let body: Record<string, unknown> = {};
-    const provider = create({
-      baseURL: 'https://example.invalid/llm',
-      apiKey: 'proxy-key',
-      fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
-        url = String(input);
-        auth = String(new Headers(init?.headers).get('authorization'));
-        body = JSON.parse(String(init?.body)) as Record<string, unknown>;
-        return new Response(JSON.stringify({ error: { message: 'stop' } }), {
-          status: 400, headers: { 'content-type': 'application/json' },
-        });
-      }) as typeof fetch,
-    });
-    await assert.rejects(generateText({ model: provider('test-model'), prompt: 'hi', maxRetries: 0 }));
-    assert.ok(url.endsWith('/llm/chat/completions'), `${label}: /chat/completions 路径(got ${url})`);
-    assert.equal(auth, 'Bearer proxy-key', `${label}: Bearer 鉴权`);
-    assert.equal(body.model, 'test-model', `${label}: model 字段`);
-    assert.ok(Array.isArray(body.messages), `${label}: messages 数组`);
-  }
-}
 
 assert.equal(shouldRetryTransientAgentRequest({
   retryAttempted: false,
@@ -831,15 +504,15 @@ const apiContext: AgentContext = {
   getProjectId: () => 'project-1',
 };
 const apiChoice = {
-  id: 'openai:gpt-5',
+  id: 'anthropic:claude-opus-5-5',
   backend: 'api',
-  provider: 'openai',
-  providerLabel: 'OpenAI',
-  model: 'gpt-5',
+  provider: 'anthropic',
+  providerLabel: 'Claude',
+  model: 'claude-opus-5-5',
   capabilities: resolveModelCapabilities({
     backend: 'api',
-    provider: 'openai',
-    modelId: 'gpt-5',
+    provider: 'anthropic',
+    modelId: 'claude-opus-5-5',
   }),
 } as const;
 const usage = {

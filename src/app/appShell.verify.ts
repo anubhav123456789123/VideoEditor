@@ -89,37 +89,28 @@ try {
 }
 
 const originalFetch = globalThis.fetch;
-const pendingCopilot = Promise.withResolvers<Response>();
-const requestedPaths: string[] = [];
-let copilotSaved = '';
+const pendingClaudeCode = Promise.withResolvers<Response>();
 let startupTimeout: ReturnType<typeof setTimeout> | undefined;
 try {
   globalThis.fetch = async (input) => {
     const path = String(input);
-    requestedPaths.push(path);
-    if (path === '/api/copilot/status') return pendingCopilot.promise;
-    if (path.startsWith('/api/claude-code/')) return Response.json({ installed: false, version: null, account: null });
-    return Response.json(path === '/api/codex/status' ? { installed: false } : {
-      keys: { LLM_OPENAI_API_KEY: { configured: true } },
-      models: { LLM_PROVIDER: 'openai', LLM_OPENAI_MODEL: 'gpt-5.5', COPILOT_MODEL: copilotSaved },
+    if (path.startsWith('/api/claude-code/')) return pendingClaudeCode.promise;
+    return Response.json({
+      keys: { LLM_ANTHROPIC_API_KEY: { configured: true } },
+      models: { LLM_PROVIDER: 'anthropic', LLM_ANTHROPIC_MODEL: 'claude-opus-5-5' },
     });
   };
-  await syncAgentBackends(() => true);
-  assert.equal(requestedPaths.includes('/api/copilot/status'), false,
-    'an unconfigured optional backend must not start on app launch');
-  copilotSaved = 'auto';
   await Promise.race([
     syncAgentBackends(() => true),
     new Promise<never>((_, reject) => {
-      startupTimeout = setTimeout(() => reject(new Error('API startup waited for Copilot')), 500);
+      startupTimeout = setTimeout(() => reject(new Error('API startup waited for Claude Code')), 500);
     }),
   ]);
-  assert.equal(requestedPaths.includes('/api/copilot/status'), true);
   assert.equal(getActiveAgentModelChoice()?.backend, 'api',
-    'configured API models are usable while a Copilot status request remains unresolved');
+    'configured Claude API models are usable while a Claude Code status request remains unresolved');
 } finally {
   clearTimeout(startupTimeout);
-  pendingCopilot.resolve(Response.json({ installed: false }));
+  pendingClaudeCode.resolve(Response.json({ installed: false, version: null, account: null }));
   globalThis.fetch = originalFetch;
 }
 
@@ -158,8 +149,7 @@ try {
     if (path === '/api/claude-code/models') {
       return Response.json({ models: [{ id: 'claude-sonnet-5', label: 'Claude Sonnet 5', isDefault: true }] });
     }
-    if (path === '/api/codex/status') return Response.json({ installed: false });
-    return Response.json({ keys: {}, models: { LLM_PROVIDER: 'openai' } });
+    return Response.json({ keys: {}, models: { LLM_PROVIDER: 'anthropic' } });
   };
   await syncAgentBackends(() => true);
   assert.equal(claudeCodePaths.includes('/api/claude-code/status'), true,

@@ -16,7 +16,6 @@ import {
   editorStatePrompt,
 } from './systemPrompt';
 import { setAgentAutoApply } from './approval-mode';
-import { buildCodexSystemPrompt } from './codex/runtime';
 import { DEFAULT_AGENT_SETTINGS } from './settings/agentSettings';
 import type { AgentContext } from './context';
 import type { ProjectDoc, TimelineItem, TimelineState } from '../editor/types';
@@ -100,15 +99,9 @@ const commonPrefixLength = (a: string, b: string): number => {
 
   const promptContext = ctxOf([item('a', 0)]);
   const apiPrompt = buildAgentSystemPrompt(promptContext, DEFAULT_AGENT_SETTINGS);
-  const codexPrompt = buildCodexSystemPrompt(promptContext);
   assert.ok(
     apiPrompt.includes(PRODUCT_IDENTITY_PROMPT),
     'the central API prompt builder must include the product identity section',
-  );
-  assert.equal(
-    codexPrompt,
-    apiPrompt,
-    'Codex and API backends must share the central prompt builder',
   );
 
   const stable = ['SYSTEM', 'CAPS', 'SKILLS'];

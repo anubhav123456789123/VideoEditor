@@ -57,21 +57,6 @@ export const CREATIVE_SKILL_METADATA: CreativeSkillMetadata[] = [
     ]
   },
   {
-    id: '11111111-1240-4000-8000-000000000005',
-    slug: 'ai-cinematic-short-film',
-    name: 'AI Cinematic Short Film',
-    nameZh: 'AI 电影感短片',
-    summary: '规划并制作 AI 电影感短片，覆盖故事、镜头、提示词、连续性和最终检查。',
-    scenarios: [
-      'ai-film',
-      'cinematic',
-      'seedance',
-      'story',
-      'short-film',
-      'video-generation'
-    ]
-  },
-  {
     id: '11111111-1240-4000-8000-000000000006',
     slug: 'product-ad-video-script',
     name: 'Product Ad Video Script',

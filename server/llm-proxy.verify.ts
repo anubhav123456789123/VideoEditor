@@ -25,36 +25,16 @@ async function close(server: Server): Promise<void> {
 }
 
 assert.equal(resolveLlmBaseUrl('anthropic', ''), 'https://api.anthropic.com/v1');
-assert.equal(resolveLlmBaseUrl('kimi', ''), 'https://api.moonshot.ai/v1');
-assert.equal(resolveLlmBaseUrl('qwen', ''), 'https://dashscope-us.aliyuncs.com/compatible-mode/v1');
-assert.equal(resolveLlmBaseUrl('glm', ''), 'https://open.bigmodel.cn/api/paas/v4');
-assert.equal(resolveLlmBaseUrl('deepseek', ''), 'https://api.deepseek.com');
-assert.equal(resolveLlmBaseUrl('minimax', ''), 'https://api.minimaxi.com/v1');
-assert.equal(resolveLlmBaseUrl('orcarouter', ''), 'https://api.orcarouter.ai/v1');
-assert.equal(resolveLlmBaseUrl('requesty', ''), 'https://router.requesty.ai/v1');
-assert.equal(resolveLlmBaseUrl('requesty', 'https://router.eu.requesty.ai/v1'), 'https://router.eu.requesty.ai/v1');
-assert.equal(resolveLlmBaseUrl('cheaperinference', ''), 'https://api.cheaperinference.com/v1');
-assert.equal(resolveLlmBaseUrl('gemini', ''), 'https://generativelanguage.googleapis.com/v1beta');
-assert.equal(resolveLlmBaseUrl('openai', 'https://api.openai.com', ''), 'https://api.openai.com/v1');
 assert.equal(resolveLlmBaseUrl('anthropic', 'https://relay.test/api', ''), 'https://relay.test/api/v1');
-assert.equal(llmOperationPath('kimi'), '/chat/completions');
-assert.equal(llmOperationPath('orcarouter'), '/chat/completions');
-assert.equal(llmOperationPath('requesty'), '/chat/completions');
-assert.equal(llmOperationPath('cheaperinference'), '/chat/completions');
+assert.equal(llmOperationPath('anthropic'), '/messages');
 
-// ── llmHeaders: Inject upstream authentication according to the protocol (google=x-goog-api-key;anthropic=x-api-key; the rest Bearer) ──
+// ── llmHeaders: Claude upstream authentication (x-api-key + anthropic-version) ──
 {
   const { KEY_NAMES, seedKeystore } = await import('./keystore.ts');
   const { llmErrorMessage, llmHeaders } = await import('./plugins/llm-proxy.ts');
   seedKeystore({
     ...Object.fromEntries(KEY_NAMES.map((name) => [name, ''])),
     LLM_PROVIDER: 'anthropic',
-    LLM_GEMINI_API_KEY: 'gk-1',
-    LLM_MINIMAX_API_KEY: 'mk-1',
-    LLM_ORCAROUTER_API_KEY: 'ork-1',
-    LLM_REQUESTY_API_KEY: 'rqsty-1',
-    LLM_CHEAPERINFERENCE_API_KEY: 'ci_live_1',
-    LLM_XAI_OAUTH_API_KEY: 'stale-oauth-token',
     LLM_API_KEY: 'ak-1',
   } as Record<string, string>);
   const reqFor = (provider: string) => ({ headers: { 'x-openchatcut-provider': provider } } as never);
@@ -65,33 +45,14 @@ assert.equal(llmOperationPath('cheaperinference'), '/chat/completions');
   assert.equal(llmProviderForRequest(), 'anthropic');
   assert.equal(llmProviderForRequest(reqFor('')), 'anthropic');
   assert.equal(normalizeLlmProvider('retired-provider'), 'anthropic', 'settings fallback stays compatible');
-  assert.deepEqual(llmHeaders(reqFor('gemini')), { 'x-goog-api-key': 'gk-1' }, 'gemini 原生协议注入 x-goog-api-key');
-  assert.deepEqual(llmHeaders(reqFor('minimax')), { authorization: 'Bearer mk-1' }, 'openai-compatible 厂商 Bearer');
-  assert.deepEqual(llmHeaders(reqFor('orcarouter')), { authorization: 'Bearer ork-1' },
-    'OrcaRouter 使用独立厂商 Key 和 OpenAI-compatible Bearer');
-  assert.deepEqual(llmHeaders(reqFor('requesty')), { authorization: 'Bearer rqsty-1' },
-    'Requesty uses its own provider key as an OpenAI-compatible Bearer');
-  assert.deepEqual(llmHeaders(reqFor('cheaperinference')), { authorization: 'Bearer ci_live_1' },
-    'Cheaper Inference uses its own provider key as an OpenAI-compatible Bearer');
   assert.deepEqual(llmHeaders(reqFor('anthropic')), { 'x-api-key': 'ak-1', 'anthropic-version': '2023-06-01' }, 'anthropic x-api-key(经遗留迁移)');
-  assert.deepEqual(llmHeaders(reqFor('xai-oauth')), {}, 'xAI OAuth 不回退到可能失效的持久化 token');
-  assert.match(llmErrorMessage(401, reqFor('gemini')), /Gemini.*设置.*API Key/, '认证错误给设置入口');
-  assert.match(llmErrorMessage(429, reqFor('openai')), /额度不足.*稍后重试/, '限流错误给额度提示');
+  assert.match(llmErrorMessage(401, reqFor('anthropic')), /Claude.*设置.*API Key/, '认证错误给设置入口');
+  assert.match(llmErrorMessage(429, reqFor('anthropic')), /额度不足.*稍后重试/, '限流错误给额度提示');
 }
 
-const switched = expandLlmProviderPatch(new Map([['LLM_PROVIDER', 'openai']]), 'anthropic');
-assert.deepEqual(Object.fromEntries(switched), {
-  LLM_PROVIDER: 'openai',
-  LLM_MODEL: '',
-  LLM_BASE_URL: '',
-});
-const explicit = expandLlmProviderPatch(new Map([
-  ['LLM_PROVIDER', 'openai'],
-  ['LLM_MODEL', 'gpt-custom'],
-  ['LLM_BASE_URL', 'https://relay.test/v2'],
-]), 'anthropic');
-assert.equal(explicit.get('LLM_MODEL'), 'gpt-custom');
-assert.equal(explicit.get('LLM_BASE_URL'), 'https://relay.test/v2');
+// A single provider: switching to the same provider keeps the saved model and URL.
+const unchanged = expandLlmProviderPatch(new Map([['LLM_PROVIDER', 'anthropic']]), 'anthropic');
+assert.deepEqual(Object.fromEntries(unchanged), { LLM_PROVIDER: 'anthropic' });
 
 const seen: Array<{ url: string; authorization?: string; provider?: string; body: string; cookie?: string }> = [];
 const upstream = createServer(async (req, res) => {
@@ -148,7 +109,7 @@ try {
   assert.equal(seen.length, 0, 'unsupported provider must not reach the configured fallback upstream');
   const first = await fetch(`http://127.0.0.1:${proxyPort}/llm/chat/completions?stream=true`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-openchatcut-provider': 'kimi' },
+    headers: { 'content-type': 'application/json', 'x-openchatcut-provider': 'anthropic' },
     body: '{"model":"compatible"}',
   });
   assert.equal(first.status, 200);
@@ -164,7 +125,7 @@ try {
   // Browser cookies (shared across every localhost port) must never reach upstream.
   await fetch(`http://127.0.0.1:${proxyPort}/llm/responses`, {
     method: 'POST',
-    headers: { 'x-openchatcut-provider': 'kimi', cookie: 'session=must-not-leak' },
+    headers: { 'x-openchatcut-provider': 'anthropic', cookie: 'session=must-not-leak' },
     body: '{"model":"openai"}',
   });
 

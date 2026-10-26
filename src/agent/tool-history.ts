@@ -1,6 +1,6 @@
 import type { ModelMessage } from 'ai';
-import { activatedToolNamesFromResult, activationProviderOptions } from '../tool-activation';
-import { compactToolResultForModel } from '../tool-result-compaction';
+import { activatedToolNamesFromResult, activationProviderOptions } from './tool-activation';
+import { compactToolResultForModel } from './tool-result-compaction';
 
 interface ToolEvent {
   readonly name: string;
@@ -12,7 +12,7 @@ interface ToolExecution {
   readonly result: unknown;
 }
 
-export function codexToolInput(value: unknown): string {
+export function toolInputText(value: unknown): string {
   try {
     return JSON.stringify(value ?? null);
   } catch {
@@ -33,13 +33,13 @@ function resultForModelHistory(event: ToolEvent, execution: ToolExecution): unkn
 }
 
 
-export function codexToolHistoryEntry(
+export function toolHistoryEntry(
   event: ToolEvent,
   execution: ToolExecution,
 ): ModelMessage {
   const text = [
-    `[tool call: ${event.name}] ${codexToolInput(event.args)}`,
-    `[tool result: ${event.name}; success=${execution.success}] ${codexToolInput(resultForModelHistory(event, execution))}`,
+    `[tool call: ${event.name}] ${toolInputText(event.args)}`,
+    `[tool result: ${event.name}; success=${execution.success}] ${toolInputText(resultForModelHistory(event, execution))}`,
   ].join('\n');
   const providerOptions = event.name === 'ToolSearch'
     ? activationProviderOptions(activatedToolNamesFromResult(execution.result))

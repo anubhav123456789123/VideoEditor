@@ -6,7 +6,7 @@
 // model behind a browser download it never reads (#168), and blocked every
 // browser-only install once its tier gained a companion.
 import { t } from '../i18n/locale';
-import { TranscriptionError } from './assemblyai';
+import { TranscriptionError } from './transcription-source';
 import type { AsrConfig } from './local-asr-types';
 
 export type LocalAsrEngine = 'native' | 'browser';

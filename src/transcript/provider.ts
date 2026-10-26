@@ -1,28 +1,21 @@
-// Transcription provider routing. Credentials remain server-side; local and
-// AssemblyAI keep their specialized execution paths.
-import {
-  isTranscriptionProviderId,
-  type TranscriptResult,
-  type TranscriptionProviderId,
-} from './types';
-import {
-  transcribePathResumable as assemblyaiTranscribePathResumable,
-  type AssemblyAiProviderStatus,
-  type AssemblyAiResumeCheckpoint,
-  type AssemblyAiCheckpointWriter,
-  type TranscribeOptions,
-} from './assemblyai';
+// Transcription runs on-device (Whisper); no audio leaves the machine.
+import type { TranscriptResult, TranscriptionProviderId } from './types';
+import type {
+  TranscribeOptions,
+  TranscriptionCheckpointWriter,
+  TranscriptionJobStatus,
+  TranscriptionResumeCheckpoint,
+} from './transcription-source';
 import { localTranscribePathResumable } from './local-asr';
-import { genericCloudTranscribePath } from './generic-cloud-asr';
+import { getLocale } from '../i18n/locale';
 
 export const TRANSCRIPTION_PROVIDER_KEY = 'cc.transcriptionProvider';
 export const TRANSCRIPTION_LANGUAGE_KEY = 'cc.transcriptionLanguage';
 export const TRANSCRIPTION_DIARIZATION_KEY = 'cc.transcriptionDiarization';
 export const TRANSCRIPTION_PROVIDER_CHANGE_EVENT = 'openchatcut:transcription-provider-change';
 
-/** Ingestion auto-transcribe policy. `local` transcribes only on the free
- *  on-device engine; `all` also fires on paid cloud providers; `off` never.
- *  Default `local` protects cloud budgets while keeping the free engine automatic. */
+/** Ingestion auto-transcribe policy: `local`/`all` transcribe new media with
+ *  the on-device engine; `off` never does. */
 export const AUTO_TRANSCRIBE_INGEST_KEY = 'cc.autoTranscribeIngest';
 export type AutoTranscribeIngestSetting = 'off' | 'local' | 'all';
 
@@ -53,13 +46,7 @@ export function setAutoTranscribeIngest(setting: AutoTranscribeIngestSetting): v
 
 
 export function preferredTranscriptionProvider(): TranscriptionProviderId {
-  try {
-    const value = localStorage.getItem(TRANSCRIPTION_PROVIDER_KEY);
-    if (isTranscriptionProviderId(value)) return value;
-  } catch {
-    // SSR / private browsing: fall through to the default.
-  }
-  return 'assemblyai';
+  return 'local';
 }
 
 export function preferredTranscriptionLanguage(): string {
@@ -69,7 +56,8 @@ export function preferredTranscriptionLanguage(): string {
   } catch {
     // SSR / private browsing: fall through to the default.
   }
-  return 'zh';
+  // No explicit choice: transcribe in the interface language.
+  return getLocale();
 }
 
 export function preferredTranscriptionDiarization(): boolean {
@@ -92,10 +80,8 @@ export function setPreferredTranscriptionProvider(provider: TranscriptionProvide
   }
 }
 
-export type { AssemblyAiProviderStatus, AssemblyAiResumeCheckpoint, AssemblyAiCheckpointWriter, TranscribeOptions };
-export { TranscriptionError, extractAudioForAsr, transcriptionSourceForPath } from './assemblyai';
-
-export type TranscriptionCheckpointWriter = AssemblyAiCheckpointWriter;
+export type { TranscriptionJobStatus, TranscriptionResumeCheckpoint, TranscriptionCheckpointWriter, TranscribeOptions };
+export { TranscriptionError, extractAudioForAsr, transcriptionSourceForPath } from './transcription-source';
 
 /**
  * Route one immutable provider attempt. Callers that persist work pass the
@@ -103,8 +89,8 @@ export type TranscriptionCheckpointWriter = AssemblyAiCheckpointWriter;
  */
 export async function transcribePathResumable(
   path: string,
-  resume: AssemblyAiResumeCheckpoint,
-  onCheckpoint: AssemblyAiCheckpointWriter,
+  resume: TranscriptionResumeCheckpoint,
+  onCheckpoint: TranscriptionCheckpointWriter,
   onWait?: (note?: string) => void,
   opts: TranscribeOptions = {},
   provider: TranscriptionProviderId = preferredTranscriptionProvider(),
@@ -114,13 +100,8 @@ export async function transcribePathResumable(
     languageCode: opts.languageCode ?? preferredTranscriptionLanguage(),
     diarize: opts.diarize ?? preferredTranscriptionDiarization(),
   };
-  if (provider === 'local') {
-    return localTranscribePathResumable(path, resume, onCheckpoint, onWait, capturedOptions);
-  }
-  if (provider === 'assemblyai') {
-    return assemblyaiTranscribePathResumable(path, resume, onCheckpoint, onWait, capturedOptions);
-  }
-  return genericCloudTranscribePath(provider, path, onCheckpoint, onWait, capturedOptions);
+  void provider;
+  return localTranscribePathResumable(path, resume, onCheckpoint, onWait, capturedOptions);
 }
 
 export async function transcribePath(

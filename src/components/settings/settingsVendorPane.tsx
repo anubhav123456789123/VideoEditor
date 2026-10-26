@@ -4,21 +4,11 @@ import { theme, themeAlpha } from '../../theme';
 import { t, useT } from '../../i18n/locale';
 import { VendorIcon } from './vendorIcons';
 import { Icon } from '../icons';
-import { CodexAccountCard } from './CodexAccountCard';
-import type { CodexAgentModel } from '../../../shared/codex-agent';
-import type { CodexSettingsController } from './useCodexSettings';
-import { copilotReasoningOptions } from './copilotReasoning';
-import type { CopilotSettingsController } from './useCopilotSettings';
 import type { ClaudeCodeSettingsController } from './useClaudeCodeSettings';
 import { ClaudeCodeVendorPane } from './ClaudeCodeVendorPane';
-import { FalModelNote } from './FalModelNote';
-import { shouldRenderModelPicker } from './codexReasoning';
 import { llmProviderConfigNames, normalizeLlmProvider } from '../../../shared/llm-providers';
 import { MODEL_CAPABILITY_OVERRIDES_KEY } from '../../../shared/model-capabilities';
-import { CopilotVendorPane } from './CopilotVendorPane';
 import { ModelCapabilityEditor } from './ModelCapabilityEditor';
-import { XaiOauthVendorPane } from './XaiOauthVendorPane';
-import { VisionModelPane } from './VisionModelPane';
 import { LocalAsrPane } from './LocalAsrPane';
 import { LocalModelPackPane } from './LocalModelPackPane';
 import { SemanticModelPackPane } from './SemanticModelPackPane';
@@ -43,8 +33,6 @@ export interface FieldCtx {
   onToggleClear: (field: SettingsField) => void;
   modelOptions: Record<string, readonly string[]>;
   onModelsDiscovered: (name: string, models: readonly string[]) => void;
-  codex: CodexSettingsController;
-  copilot: CopilotSettingsController;
   claudeCode: ClaudeCodeSettingsController;
   /** Re-read /api/keys and push the result to the agent runtime (used by connection-style pages after login/logout). */
   refreshStatus: () => Promise<void>;
@@ -72,23 +60,14 @@ export function VendorPane({ page, hint, ctx }: {
   page: SettingsVendorPage; hint: string; ctx: FieldCtx;
 }) {
   const t = useT();
-  if (page.connection === 'codex') return <CodexVendorPane page={page} hint={hint} ctx={ctx} />;
-  if (page.connection === 'copilot') return (
-    <CopilotVendorPane page={page} hint={hint} ctx={ctx} rawOverrides={capabilityOverridesValue(ctx)}
-      onOverridesChange={(value) => ctx.onStage(CAPABILITY_OVERRIDE_FIELD, value)}>
-      {page.fields.map((field) => <FieldRow key={field.name} field={field} ctx={ctx} />)}
-    </CopilotVendorPane>
-  );
   if (page.connection === 'claude-code') return (
     <ClaudeCodeVendorPane page={page} hint={hint} ctx={ctx} rawOverrides={capabilityOverridesValue(ctx)}
       onOverridesChange={(value) => ctx.onStage(CAPABILITY_OVERRIDE_FIELD, value)}>
       {page.fields.map((field) => <FieldRow key={field.name} field={field} ctx={ctx} />)}
     </ClaudeCodeVendorPane>
   );
-  if (page.connection === 'xai-oauth') return <XaiOauthVendorPane page={page} hint={hint} ctx={ctx} />;
-  if (page.key === 'llm/vision') return <VisionModelPane />;
   if (page.kind === 'local-models') return <LocalModelsPane page={page} fields={page.fields} ctx={ctx} />;
-  const on = vendorConfigured(ctx.status, page, ctx.codex.status, ctx.copilot.status, ctx.claudeCode.status);
+  const on = vendorConfigured(ctx.status, page, ctx.claudeCode.status);
   return (
     <div style={pane}>
       <div>
@@ -105,57 +84,13 @@ export function VendorPane({ page, hint, ctx }: {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: page.note ? 9 : 0 }}>
           {page.fields.map((f) => <FieldRow key={f.name} field={f} ctx={ctx} />)}
         </div>
-        <FalModelNote page={page} status={ctx.status} values={ctx.values} />
         {page.key.startsWith('llm/') && (
           <ModelCapabilityEditor backend="api" provider={normalizeLlmProvider(page.vendor)}
             modelId={apiModelId(page, ctx)} rawOverrides={capabilityOverridesValue(ctx)}
             onChange={(value) => ctx.onStage(CAPABILITY_OVERRIDE_FIELD, value)} />
         )}
       </section>
-      {page.vendor !== 'fal' && <TestConnectionRow page={page} ctx={ctx} />}
-    </div>
-  );
-}
-
-function CodexVendorPane({ page, hint, ctx }: {
-  page: SettingsVendorPage; hint: string; ctx: FieldCtx;
-}) {
-  const t = useT();
-  const status = ctx.codex.status;
-  const statusLabel = !status ? t('状态未知')
-    : !status.installed ? t('CLI 未安装')
-      : status.loginPending || ctx.codex.login ? t('登录中')
-        : status.account?.type === 'chatgpt' ? t('已登录')
-          : status.account ? t('API Key 模式')
-            : status.error || ctx.codex.error ? t('连接异常') : t('未登录');
-  const on = vendorConfigured(ctx.status, page, status);
-  const capabilityModelId = (ctx.values.CODEX_MODEL ?? modelValue(ctx.status, 'CODEX_MODEL'))
-    || ctx.codex.models.find((model) => model.isDefault)?.id
-    || '';
-  return (
-    <div style={pane}>
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <VendorIcon vendor={page.vendor} size={18} />
-          <b style={{ fontSize: 13 }}>{t(page.title)}</b>
-          <span style={{ fontSize: 11, color: on ? ON : theme.textDim }}>{statusLabel}</span>
-        </div>
-        <div style={{ fontSize: 11.5, color: theme.textDim, marginTop: 3, paddingLeft: 26 }}>{t(hint)}</div>
-      </div>
-      <CodexAccountCard controller={ctx.codex} />
-      <section style={fieldCardBox}>
-        {page.note && <div style={pageNote}>{t(page.note)}</div>}
-        {page.noteAction && <SettingsNoteAction config={page.noteAction} onOpenPage={ctx.openPage} />}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: page.note ? 9 : 0 }}>
-          {page.fields.map((field) => <FieldRow key={field.name} field={field} ctx={ctx} />)}
-        </div>
-        {capabilityModelId && (
-          <ModelCapabilityEditor backend="codex" provider="openai"
-            modelId={capabilityModelId}
-            rawOverrides={capabilityOverridesValue(ctx)}
-            onChange={(value) => ctx.onStage(CAPABILITY_OVERRIDE_FIELD, value)} />
-        )}
-      </section>
+      <TestConnectionRow page={page} ctx={ctx} />
     </div>
   );
 }
@@ -269,26 +204,6 @@ export function TestConnectionRow({ page, ctx }: { page: SettingsVendorPage; ctx
 
 // ──Field rendering ────────────────────────────────────────────────────────
 
-function selectedCodexModel(ctx: FieldCtx): CodexAgentModel | undefined {
-  const selectedId = ctx.values.CODEX_MODEL ?? modelValue(ctx.status, 'CODEX_MODEL');
-  return ctx.codex.models.find((model) => model.id === selectedId)
-    ?? (selectedId ? undefined : ctx.codex.models.find((model) => model.isDefault));
-}
-
-function codexReasoningOptions(
-  ctx: FieldCtx,
-  formatDefault: (effort?: string) => string,
-): readonly SelectOption[] {
-  const model = selectedCodexModel(ctx);
-  return [
-    { value: '', label: formatDefault(model?.defaultReasoningEffort ?? undefined) },
-    ...(model?.supportedReasoningEfforts.map((option) => ({
-      value: option.reasoningEffort,
-      label: option.reasoningEffort,
-    })) ?? []),
-  ];
-}
-
 export function FieldRow({ field, ctx }: { field: SettingsField; ctx: FieldCtx }) {
   const t = useT();
   const { status, reveal, onStage, onToggleClear } = ctx;
@@ -301,20 +216,9 @@ export function FieldRow({ field, ctx }: { field: SettingsField; ctx: FieldCtx }
   const shown = value ?? (isModelField(field) ? modelValue(status, field.name) : '');
   // Select uses the "default" option to clear; toggle's off/on itself is set/clear.
   const clearable = configured && field.kind !== 'select' && field.kind !== 'toggle';
-  const discovered = field.name === 'CODEX_MODEL'
-    ? ctx.codex.models.map((model) => model.id)
-    : field.name === 'COPILOT_MODEL'
-      ? ctx.copilot.models.filter((model) => model.supportsTools).map((model) => model.id)
-      : field.name === 'CLAUDE_CODE_MODEL'
-        ? ctx.claudeCode.models.map((model) => model.id)
-        : field.discoverableModel ? ctx.modelOptions[field.name] ?? [] : [];
-  const options = field.name === 'CODEX_REASONING_EFFORT'
-    ? codexReasoningOptions(ctx, (effort) => effort
-      ? t('模型默认（{name}）', { name: effort })
-      : t('模型默认'))
-    : field.name === 'COPILOT_REASONING_EFFORT'
-      ? copilotReasoningOptions(ctx, t('模型默认'))
-      : undefined;
+  const discovered = field.name === 'CLAUDE_CODE_MODEL'
+    ? ctx.claudeCode.models.map((model) => model.id)
+    : field.discoverableModel ? ctx.modelOptions[field.name] ?? [] : [];
   return (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <span style={fieldHead}>
@@ -331,14 +235,12 @@ export function FieldRow({ field, ctx }: { field: SettingsField; ctx: FieldCtx }
       </span>
       {field.kind === 'toggle'
         ? <ToggleSwitch field={field} shown={shown} onStage={onStage} />
-        : shouldRenderModelPicker(field, discovered.length)
+        : field.discoverableModel === true && discovered.length > 0
           ? <ModelInput field={field} shown={shown} models={discovered} reveal={reveal}
-              loading={(field.name === 'CODEX_MODEL' && ctx.codex.modelBusy)
-                || (field.name === 'COPILOT_MODEL' && ctx.copilot.modelBusy)
-                || (field.name === 'CLAUDE_CODE_MODEL' && ctx.claudeCode.modelBusy)}
+              loading={field.name === 'CLAUDE_CODE_MODEL' && ctx.claudeCode.modelBusy}
               configured={configured} stagedClear={stagedClear} onStage={onStage} />
           : field.kind === 'select'
-          ? <SelectInput field={field} status={status} shown={shown} options={options} onStage={onStage} />
+          ? <SelectInput field={field} status={status} shown={shown} onStage={onStage} />
           : field.kind === 'directory'
             ? <DirectoryInput field={field} shown={shown} stagedClear={stagedClear} onStage={onStage} />
             : <TextInput field={field} shown={shown} reveal={reveal} configured={configured}

@@ -47,18 +47,8 @@ const ROUTING_GROUPS: readonly RoutingGroup[] = [
     tools: ['set_aspect_ratio', 'apply_layout', 'auto_reframe'],
   },
   {
-    requestContext: [
-      ['elevenlabs', 'doubao', 'minimax', 'inworld', 'fish audio', 'fishaudio', 'speechify', 'openai', 'gemini', 'mistral', 'cartesia'],
-      ['tts', 'text-to-speech', 'speech synthesis', 'voice generation', 'voiceover generation', '配音', '语音合成'],
-    ],
-    tools: ['submit_voice', 'track_progress', 'rerun_generation'],
-  },
-  {
-    requestContext: [
-      ['assemblyai', 'local', 'openai', 'mistral', 'deepgram', 'groq', 'elevenlabs', 'cartesia'],
-      ['transcribe', 'transcription', 'speech-to-text', 'stt', 'asr', '转写', '语音识别'],
-    ],
-    tools: ['transcribe_track', 'read_transcript', 'find_transcript'],
+    requestKeywords: ['transcribe', 'transcription', 'speech-to-text', 'stt', 'asr', 'whisper', '转写', '语音识别'],
+    tools: ['transcribe_track', 'read_transcript', 'find_transcript', 'track_progress'],
   },
   {
     requestKeywords: ['caption', 'subtitle', 'captions', 'subtitles', '字幕'],
@@ -99,10 +89,7 @@ const ROUTING_GROUPS: readonly RoutingGroup[] = [
   },
   {
     requestContext: [GENERATE_VERBS, GENERATE_TARGETS],
-    tools: [
-      'submit_image', 'submit_voice', 'submit_sound', 'submit_music', 'submit_video',
-      'submit_shader', 'submit_motion_graphic', 'track_progress', 'rerun_generation',
-    ],
+    tools: ['submit_shader', 'submit_motion_graphic', 'create_motion_graphic_from_code'],
   },
   {
     requestKeywords: ['import', 'upload', 'download', 'media', 'asset', 'stock', '素材', '导入', '上传', '下载', '媒体', '版权'],

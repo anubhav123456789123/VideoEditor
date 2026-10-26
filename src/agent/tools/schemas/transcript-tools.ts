@@ -18,10 +18,10 @@ export const TRANSCRIPT_TOOL_SCHEMAS: AgentToolSchema[] = [
   },
   {
     name: 'transcribe_track',
-    description: 'Transcribe the audio/video clips on a track, attach normalized transcript data, and include word/speaker detail when the provider returns it. Uses the provider selected in Settings (AssemblyAI by default) unless provider is explicitly supplied. Required before find_transcript / clean_script / delete_text / captions when a clip has no transcript yet.',
+    description: 'Transcribe the audio/video clips on a track, attach normalized transcript data, and include word/speaker detail when the provider returns it. Runs on-device (local Whisper); no audio leaves the machine. Required before find_transcript / clean_script / delete_text / captions when a clip has no transcript yet.',
     input_schema: { type: 'object', properties: {
       track: { type: 'string', description: 'Track alias or stable id whose audio to transcribe (default A1).' },
-      provider: { type: 'string', enum: ['assemblyai', 'local', 'openai', 'mistral', 'deepgram', 'groq', 'elevenlabs', 'cartesia'], description: 'Optional configured provider override. Omit to use the provider selected in Settings.' },
+      provider: { type: 'string', enum: ['local'], description: 'Optional; the on-device engine is the only provider.' },
     } },
   },
   {
@@ -144,8 +144,8 @@ export const TRANSCRIPT_TOOL_SCHEMAS: AgentToolSchema[] = [
         track: { type: 'string', description: 'When itemId is omitted, locate by track alias or stable id; default A1.' },
         provider: {
           type: 'string',
-          enum: ['assemblyai', 'local', 'openai', 'mistral', 'deepgram', 'groq', 'elevenlabs', 'cartesia'],
-          description: 'retry_transcription: optional configured provider override, same values as transcribe_track. Omit to use the provider selected in Settings.',
+          enum: ['local'],
+          description: 'retry_transcription: optional; the on-device engine is the only provider.',
         },
         wordIndex: { type: 'number', description: 'fix word: index of the word to correct; mutually exclusive with find.' },
         find: { type: 'string', description: 'fix word: incorrect source text that must match exactly one word; mutually exclusive with wordIndex.' },

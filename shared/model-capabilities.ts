@@ -2,7 +2,7 @@ import modelsDevCatalog from '../assets/model-capabilities/models-dev.json' with
 import { LLM_PROVIDER_PRESETS, type LlmProvider } from './llm-providers.js';
 
 export const MODEL_CAPABILITY_OVERRIDES_KEY = 'AGENT_MODEL_CAPABILITY_OVERRIDES';
-export type ModelBackend = 'api' | 'codex' | 'copilot' | 'claude-code';
+export type ModelBackend = 'api' | 'claude-code';
 export type ModelCapabilitySource = 'catalog' | 'provider-fallback' | 'settings-override';
 
 export interface ModelIdentity {
@@ -87,16 +87,8 @@ const catalogProviders = modelsDevCatalog.providers as unknown as Partial<
   Record<LlmProvider, Readonly<Record<string, CatalogModel>>>
 >;
 
-/** Subscription and gateway models reuse their known upstream catalog entries. */
-function catalogProviderId(provider: LlmProvider, modelId?: string): LlmProvider {
-  if (provider === 'cheaperinference' && modelId) {
-    const providers = [copilotProviderForModel(modelId), ...Object.keys(catalogProviders) as LlmProvider[]];
-    // Exact ids win over snapshot prefixes, including non-Copilot model families.
-    return providers.find((id) => catalogProviders[id]?.[modelId])
-      ?? providers.find((id) => Object.keys(catalogProviders[id] ?? {}).some((base) => modelId.startsWith(`${base}-`)))
-      ?? provider;
-  }
-  return provider === 'xai-oauth' ? 'xai' : provider;
+function catalogProviderId(provider: LlmProvider, _modelId?: string): LlmProvider {
+  return provider;
 }
 
 type OverridePatch = Partial<Omit<ModelCapabilityOverride, keyof ModelIdentity>>;
@@ -119,11 +111,10 @@ function parseIdentity(value: Record<string, unknown>): ModelIdentity {
   const backend = value.backend;
   const provider = value.provider;
   const modelId = typeof value.modelId === 'string' ? value.modelId.trim() : '';
-  if (backend !== 'api' && backend !== 'codex' && backend !== 'copilot' && backend !== 'claude-code') {
+  if (backend !== 'api' && backend !== 'claude-code') {
     throw new Error('Invalid model capability backend.');
   }
   if (typeof provider !== 'string' || !PROVIDERS.has(provider)) throw new Error('Invalid model capability provider.');
-  if (backend === 'codex' && provider !== 'openai') throw new Error('Codex capabilities require the OpenAI provider.');
   if (backend === 'claude-code' && provider !== 'anthropic') {
     throw new Error('Claude Code capabilities require the Anthropic provider.');
   }
@@ -238,24 +229,17 @@ export function findModelCapabilityOverride(
 }
 
 /**
- * Vision-capable model ids for a provider from the models.dev catalog,
- * with the provider's currently configured model appended when it is not
- * listed (custom/local model ids must stay selectable). Cloud providers
- * with no vision models in the catalog yield an empty list; local providers
- * (Ollama/LM Studio) keep their configured model so local vision models
- * such as llava remain selectable.
+ * Vision-capable Claude model ids from the bundled catalog, with the
+ * currently configured model appended when it is not listed so a newer
+ * model missing from the catalog remains selectable.
  */
 export function listVisionModels(
   provider: LlmProvider,
   configuredModel?: string,
 ): readonly string[] {
-  if (provider === 'cheaperinference') {
-    return configuredModel && resolveModelCapabilities({ backend: 'api', provider, modelId: configuredModel }).supportsImages.value
-      ? [configuredModel] : [];
-  }
   const catalog = catalogProviders[catalogProviderId(provider)] ?? {};
   const ids = Object.keys(catalog).filter((id) => (catalog[id]?.input ?? []).includes('image'));
-  if (ids.length === 0 && provider !== 'ollama' && provider !== 'lmstudio') return [];
+  if (ids.length === 0) return [];
   if (configuredModel && !ids.includes(configuredModel)) return [...ids, configuredModel];
   return ids;
 }
@@ -318,89 +302,4 @@ export function resolveModelCapabilities(
     ...(defaultEffort ? { defaultReasoningEffort: defaultEffort } : {}) };
 }
 
-/**
- * Facts the Copilot runtime reports for one model via `client.listModels()`.
- * These come from the Copilot service itself, so they outrank the bundled
- * models.dev catalog and are recorded as exact rather than estimated.
- */
-export interface CopilotModelFacts {
-  readonly contextWindowTokens: number | null;
-  readonly maxInputTokens: number | null;
-  readonly maxOutputTokens: number | null;
-  readonly supportsTools: boolean;
-  readonly supportsVision: boolean;
-  readonly reasoningEfforts: readonly string[];
-}
 
-/**
- * Copilot serves models from several vendors behind one endpoint. Attributing
- * each model id to its upstream provider keeps capability overrides and the
- * vision-model picker working the same way they do for the `api` backend.
- */
-export function copilotProviderForModel(modelId: string): LlmProvider {
-  const id = modelId.toLowerCase();
-  if (id.startsWith('claude')) return 'anthropic';
-  if (id.startsWith('gemini')) return 'gemini';
-  if (id.startsWith('grok')) return 'xai';
-  return 'openai';
-}
-
-export function resolveCopilotModelCapabilities(
-  identity: ModelIdentity,
-  facts: CopilotModelFacts,
-  records: readonly ModelCapabilityOverride[] = [],
-): ModelCapabilities {
-  const override = findModelCapabilityOverride(records, identity);
-  const reported = positiveInteger(facts.contextWindowTokens);
-  const context = override?.contextWindowTokens !== undefined
-    ? exact(override.contextWindowTokens, 'settings-override')
-    : reported
-      ? exact(reported, 'catalog')
-      : fallback(UNKNOWN_CONTEXT_TOKENS);
-  const reportedOutput = positiveInteger(facts.maxOutputTokens);
-  const outputValue = Math.min(
-    override?.maxOutputTokens ?? reportedOutput ?? UNKNOWN_OUTPUT_TOKENS,
-    context.value,
-  );
-  const output = override?.maxOutputTokens !== undefined
-    ? exact(outputValue, 'settings-override')
-    : reportedOutput
-      ? exact(outputValue, 'catalog')
-      : fallback(outputValue);
-  const reportedInput = positiveInteger(facts.maxInputTokens);
-  const inputValue = Math.min(
-    override?.maxInputTokens ?? reportedInput ?? Math.max(1, context.value - output.value),
-    context.value,
-  );
-  const input = override?.maxInputTokens !== undefined
-    ? exact(inputValue, 'settings-override')
-    : reportedInput
-      ? exact(inputValue, 'catalog')
-      : fallback(inputValue);
-  const tools = override?.supportsTools !== undefined
-    ? exact(override.supportsTools, 'settings-override')
-    : exact(facts.supportsTools, 'catalog');
-  const images = override?.supportsImages !== undefined
-    ? exact(override.supportsImages, 'settings-override')
-    : exact(facts.supportsVision, 'catalog');
-  const supportsReasoning = facts.reasoningEfforts.length > 0;
-  const reasoning = override?.supportsReasoning !== undefined
-    ? exact(override.supportsReasoning, 'settings-override')
-    : exact(supportsReasoning, 'catalog');
-  const efforts = override?.reasoningEfforts !== undefined
-    ? exact(override.reasoningEfforts, 'settings-override')
-    : exact(facts.reasoningEfforts, 'catalog');
-  const defaultEffort = override?.defaultReasoningEffort
-    ? exact(override.defaultReasoningEffort, 'settings-override')
-    : undefined;
-  return {
-    contextWindowTokens: context,
-    maxInputTokens: input,
-    maxOutputTokens: output,
-    supportsTools: tools,
-    supportsImages: images,
-    supportsReasoning: reasoning,
-    reasoningEfforts: efforts,
-    ...(defaultEffort ? { defaultReasoningEffort: defaultEffort } : {}),
-  };
-}

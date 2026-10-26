@@ -14,7 +14,6 @@ import type {
   resumeGenerationJobDownload,
 } from './generation-jobs.ts';
 import type { exportJobFilename, exportJobResultName } from './export-runtime.ts';
-import type { pickMurekaAudioUrl } from './music.ts';
 import { ResultDownloadError } from './result-download.ts';
 import {
   fileExists,
@@ -36,10 +35,6 @@ interface GenerationJobsApi {
 interface ExportRuntimeApi {
   exportJobFilename: typeof exportJobFilename;
   exportJobResultName: typeof exportJobResultName;
-}
-
-interface MusicApi {
-  pickMurekaAudioUrl: typeof pickMurekaAudioUrl;
 }
 
 const generationResult = (id: string) => ({
@@ -444,12 +439,4 @@ export async function verifyTaskLimitedGenerationJobs(
     true,
     'cleanup-trigger deletion flushes the final background journal write before removing the temp store',
   );
-}
-
-export function verifyMurekaAudioUrls(music: MusicApi): void {
-  const { pickMurekaAudioUrl } = music;
-  assert.equal(pickMurekaAudioUrl({ choices: [{ audio_url: 'audio' }] }), 'audio');
-  assert.equal(pickMurekaAudioUrl({ choices: [{ url: 'url' }] }), 'url');
-  assert.equal(pickMurekaAudioUrl({ choices: [{ wav_url: 'wav' }] }), 'wav');
-  assert.equal(pickMurekaAudioUrl({ choices: [{ flac_url: 'flac' }] }), 'flac');
 }

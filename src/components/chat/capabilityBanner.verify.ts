@@ -11,7 +11,7 @@ import { CapabilityBanner } from './CapabilityGapBanner.tsx';
 // No capability enabled → every creative capability is missing.
 applyLiveCaps({});
 const allMissing = missingCreativeCaps();
-assert.deepEqual(allMissing, ['transcription', 'image', 'voice', 'video', 'music', 'sound']);
+assert.deepEqual(allMissing, ['transcription']);
 for (const key of allMissing) {
   assert.ok(CAPABILITY_LABELS[key], `label for ${key}`);
 }
@@ -19,7 +19,7 @@ assert.equal(formatCapabilityNames(['A', 'B'], 'zh'), 'A、B');
 assert.equal(formatCapabilityNames(['A', 'B'], 'ru'), 'A и B');
 
 // Every creative capability enabled → banner hides.
-applyLiveCaps({ transcription: true, image: true, voice: true, video: true, music: true, sound: true });
+applyLiveCaps({ transcription: true });
 assert.deepEqual(missingCreativeCaps(), [], 'configured creative caps hide the banner');
 const configuredController = {
   props: { onOpenSettings: () => undefined },
@@ -32,7 +32,7 @@ assert.equal(
 );
 
 // Partial: only transcription off → exactly that key surfaces.
-applyLiveCaps({ image: true, voice: true, video: true, music: true, sound: true });
+applyLiveCaps({});
 assert.deepEqual(missingCreativeCaps(), ['transcription']);
 
 console.log('capabilityBanner.verify: creative-cap derivation and labels OK');

@@ -7,7 +7,7 @@ user-invocable: true
 
 # Shader Generator
 
-Submit-only: creates a backend generation job, returns `jobId`. Use the `track_progress` tool for job lifecycle after submission.
+Synchronous: Claude writes the GLSL, it is compiled and registered, and the call returns the new `effectId` / `transitionId`.
 
 **Always use `generate.ts` for new shaders.** Manual authoring is only for editing existing asset code — never as a fallback when generation fails.
 
@@ -128,7 +128,7 @@ Do not call `generate.ts` for this path. Do not pass a real LUT asset id as `ass
 
 ## Usage
 
-Before calling `submit_shader`, restate the user's intent in one concrete sentence, then proceed immediately. After `track_progress` returns, state what was produced in one line — do NOT ask "要保留还是重新生成".
+Before calling `submit_shader`, restate the user's intent in one concrete sentence, then proceed immediately. After it returns, state what was produced in one line — do NOT ask "要保留还是重新生成".
 
 ```ts
 submit_shader({
@@ -157,8 +157,7 @@ submit_shader({
 
 ## Strategy
 
-- Submit, then stop. Tell user the job was created.
-- Use the `track_progress` tool for status/wait after submission.
+- Submit, then stop. Tell the user what was created.
 - Generation always produces a library asset — never refuse because the timeline isn't ready.
 - **Apply is separate and optional.** Only apply when user explicitly asks ("加到视频", "apply", "用到第一段"). When ambiguous, default to library-only.
 
@@ -179,7 +178,7 @@ It reinforces that shader `properties` is an array, but the allowed shader prope
 
 ## Output
 
-Returns `{ success, job: { jobId, status }, manage: { status, wait, watch } }`.
+Returns `{ ok, effectId | transitionId, name, properties, next }`, or `{ error, glsl? }` when the shader fails validation.
 
 ## Applying to Timeline
 

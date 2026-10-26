@@ -13,13 +13,9 @@ if (typeof appPackage.version !== 'string') throw new Error('package.json is mis
 const env = process.env;
 const has = (...names: string[]) => names.some((name) => Boolean(env[name]));
 const configuredCaps = {
-  image: has('IMAGE_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'MINIMAX_API_KEY', 'FAL_KEY'),
-  voice: has('DOUBAO_TTS_API_KEY', 'ELEVENLABS_API_KEY', 'MINIMAX_API_KEY'),
-  video: has('SEEDANCE_API_KEY', 'KLING_API_KEY', 'MINIMAX_API_KEY', 'FAL_KEY'),
-  music: has('MUREKA_API_KEY', 'MINIMAX_API_KEY'),
-  sound: has('ELEVENLABS_API_KEY'),
   stock: has('PEXELS_API_KEY', 'PIXABAY_API_KEY', 'UNSPLASH_ACCESS_KEY', 'FREESOUND_API_KEY'),
-  transcription: has('ASSEMBLYAI_API_KEY'),
+  // On-device Whisper needs no key.
+  transcription: true,
   sandbox: has('E2B_API_KEY'),
   web: has('FIRECRAWL_API_KEY'),
 };

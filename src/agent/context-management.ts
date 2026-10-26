@@ -10,7 +10,6 @@ import {
   type ContextPreparation,
 } from './context-compaction';
 import { getLanguageModel, getLanguageModelProviderOptions } from './client';
-import { runCodexSummary } from './codex/runtime';
 import { activatedToolNamesFromMessages, activationProviderOptions } from './tool-activation';
 import { summarizeConversation, SUMMARY_SYSTEM_PROMPT } from './context-summary';
 
@@ -35,9 +34,9 @@ async function summarizeWithApi(
   choice: AgentModelChoice,
   signal?: AbortSignal,
 ): Promise<string> {
-  const providerOptions = getLanguageModelProviderOptions(choice.provider, choice.openAiApiMode);
+  const providerOptions = getLanguageModelProviderOptions(choice.provider);
   const result = await generateText({
-    model: await getLanguageModel(choice.provider, choice.model, choice.openAiApiMode),
+    model: await getLanguageModel(choice.provider, choice.model),
     system: SUMMARY_SYSTEM_PROMPT,
     prompt,
     maxOutputTokens,
@@ -49,36 +48,13 @@ async function summarizeWithApi(
   return result.text.trim();
 }
 
-async function summarizeWithCodex(
-  prompt: string,
-  maxOutputTokens: number,
-  options: AgentContextPreparationOptions,
-): Promise<string> {
-  return runCodexSummary({
-    system: `${SUMMARY_SYSTEM_PROMPT}\nThe response must not exceed ${maxOutputTokens} tokens.`,
-    prompt,
-    projectId: options.ctx.getProjectId?.().trim() || 'unsaved-project',
-    model: options.choice.requestModel,
-    reasoningEffort: options.choice.reasoningEffort,
-    signal: options.signal,
-    maxOutputTokens,
-  });
-}
-
 export function contextWindowForPreparation(
   choice: AgentModelChoice,
   previous?: AgentContextUsage,
 ): { readonly tokens: number; readonly estimated: boolean } {
+  void previous;
   const resolved = choice.capabilities.contextWindowTokens;
-  // Codex and Copilot both report the model's real context window with their
-  // usage events, so a measured value outranks the catalog estimate.
-  const reportedRuntimeWindow = (choice.backend === 'codex' || choice.backend === 'copilot')
-    && resolved.source !== 'settings-override'
-    && previous?.modelId === choice.id
-    && previous.contextWindowEstimated === false;
-  return reportedRuntimeWindow
-    ? { tokens: previous.contextWindowTokens, estimated: false }
-    : { tokens: resolved.value, estimated: resolved.estimated };
+  return { tokens: resolved.value, estimated: resolved.estimated };
 }
 async function summarizeForPreparation(
   messages: readonly ModelMessage[],
@@ -92,15 +68,7 @@ async function summarizeForPreparation(
     contextWindowTokens,
     maxInputTokens,
     maxOutputTokens,
-    (prompt, outputTokens) => {
-      if (options.choice.backend === 'copilot') {
-        // The browser loop has no Copilot turn runner; server runs own that path.
-        throw new Error('Copilot summarization runs server-side only.');
-      }
-      return options.choice.backend === 'codex'
-        ? summarizeWithCodex(prompt, outputTokens, options)
-        : summarizeWithApi(prompt, outputTokens, options.choice, options.signal);
-    },
+    (prompt, outputTokens) => summarizeWithApi(prompt, outputTokens, options.choice, options.signal),
   );
   return summary;
 }

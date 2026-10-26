@@ -7,8 +7,8 @@ import type { AsrConfig, AsrResult, AsrDevice, LocalAsrWorkerResponse } from './
 import { chooseAsrConfig, detectDeviceProfile, markAsrWebgpuBroken } from './deviceProfile';
 import {
   TranscriptionError, transcriptionSourceForPath,
-  type AssemblyAiCheckpointWriter, type AssemblyAiResumeCheckpoint, type TranscribeOptions,
-} from './assemblyai';
+  type TranscriptionCheckpointWriter, type TranscriptionResumeCheckpoint, type TranscribeOptions,
+} from './transcription-source';
 import { downsampleMono, hasTranscribableSignal } from './client-asr-extract';
 import { ASR_INFERENCE_CONTRACT } from '../../shared/asr-inference-contract';
 import { ASR_MODELS } from '../../shared/asr-models';
@@ -34,8 +34,8 @@ type Pending = {
 type ProgressListener = (progress?: number, file?: string) => void;
 
 /** Local checkpoint reuses the cloud shape; uploadUrl is simply never written. */
-type LocalAsrCheckpoint = AssemblyAiResumeCheckpoint;
-type LocalAsrCheckpointWriter = AssemblyAiCheckpointWriter;
+type LocalAsrCheckpoint = TranscriptionResumeCheckpoint;
+type LocalAsrCheckpointWriter = TranscriptionCheckpointWriter;
 
 type ClientAsrRequest =
   | { type: 'load'; device: AsrDevice; modelId: string; revision: string }

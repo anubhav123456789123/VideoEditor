@@ -2,11 +2,8 @@ import { startUiLocaleSync } from '../i18n/localeSync';
 import { t } from '../i18n/locale';
 import { useCallback, useEffect, useState } from 'react';
 import { applyLiveCaps, applyLiveKeyStatus, applyLiveModels } from '../agent/capabilities';
-import { fetchCodexModels, fetchCodexStatus } from '../agent/codex/client';
-import { fetchCopilotModels, fetchCopilotStatus } from '../agent/copilot/client';
 import { fetchClaudeCodeModels, fetchClaudeCodeStatus } from '../agent/claude-code/client';
-import { applyAgentModelStatus, applyClaudeCodeAgentStatus, applyCodexAgentStatus, applyCopilotAgentStatus, selectAgentModel, getActiveAgentModelChoice, getAgentModelSnapshot } from '../agent/model-selection';
-import { loadAgentModelPref } from '../persist/sessionPrefs';
+import { applyAgentModelStatus, applyClaudeCodeAgentStatus } from '../agent/model-selection';
 import type { ProjectDoc, TimelineState } from '../editor/types';
 import {
   createProject,
@@ -49,27 +46,8 @@ export function navigateTo(hash: string): void {
   window.location.hash = hash;
 }
 
-async function syncCopilotBackend(
-  isActive: () => boolean,
-  savedModel?: string,
-  savedReasoningEffort?: string,
-): Promise<void> {
-  try {
-    const status = await fetchCopilotStatus();
-    if (!isActive()) return;
-    const models = status.installed && status.supported && status.authenticated
-      ? await fetchCopilotModels().catch(() => null)
-      : null;
-    if (isActive()) applyCopilotAgentStatus(
-      status, savedModel, savedReasoningEffort, models && !models.error ? models.models : [],
-    );
-  } catch {
-    // An optional backend must not prevent configured API/Codex models from loading.
-  }
-}
-
 /**
- * Claude Code is a first-class CLI backend like Codex, so its status has to be
+ * Claude Code is a first-class CLI backend, so its status has to be
  * discovered on app launch rather than the first time Settings mounts: the
  * model picker builds its Anthropic entries from this status, and before this
  * ran at startup the backend stayed invisible until the user opened Settings
@@ -86,21 +64,18 @@ async function syncClaudeCodeBackend(isActive: () => boolean, savedModel?: strin
       applyClaudeCodeAgentStatus(status, savedModel, models && !models.error ? models.models : []);
     }
   } catch {
-    // An optional backend must not prevent configured API/Codex models from loading.
+    // An optional backend must not prevent the configured Claude API model from loading.
   }
 }
 
 export async function syncAgentBackends(isActive: () => boolean): Promise<void> {
-  const [keyResult, codexResult] = await Promise.allSettled([
-    fetch('/api/keys').then(async (response): Promise<LiveAgentStatus> => {
+  const keyResult = await fetch('/api/keys')
+    .then(async (response): Promise<LiveAgentStatus> => {
       if (!response.ok) throw new Error('Agent key status is unavailable.');
       return response.json() as Promise<LiveAgentStatus>;
-    }),
-    fetchCodexStatus(),
-  ]);
+    })
+    .then((value) => ({ status: 'fulfilled' as const, value }), () => ({ status: 'rejected' as const }));
   if (!isActive()) return;
-  let savedCodexModel: string | undefined;
-  let savedCodexReasoningEffort: string | undefined;
   let savedClaudeCodeModel: string | undefined;
   if (keyResult.status === 'fulfilled') {
     const { caps, keys, models } = keyResult.value;
@@ -109,39 +84,13 @@ export async function syncAgentBackends(isActive: () => boolean): Promise<void> 
     if (models) {
       applyLiveModels(models);
       applyAgentModelStatus(keys ?? {}, models);
-      savedCodexModel = models.CODEX_MODEL;
-      savedCodexReasoningEffort = models.CODEX_REASONING_EFFORT;
       savedClaudeCodeModel = models.CLAUDE_CODE_MODEL;
-      if (models.COPILOT_MODEL || loadAgentModelPref()?.startsWith('copilot:')) {
-        void syncCopilotBackend(isActive, models.COPILOT_MODEL, models.COPILOT_REASONING_EFFORT);
-      }
     }
     startUiLocaleSync(models?.UI_LOCALE);
   }
-  // Detached like the Copilot probe: `claude --version` plus `claude auth
-  // status` can take seconds, and configured API/Codex models must stay usable
-  // while it runs. Unlike Copilot it is never gated on a saved model, because
-  // an unconfigured install is exactly the case this has to surface.
+  // Detached: `claude --version` plus `claude auth status` can take seconds,
+  // and the configured Claude API model must stay usable while it runs.
   void syncClaudeCodeBackend(isActive, savedClaudeCodeModel);
-  if (codexResult.status !== 'fulfilled') return;
-  const modelResult = codexResult.value.installed && codexResult.value.account?.type !== 'apiKey'
-    ? await fetchCodexModels().catch(() => null)
-    : null;
-  if (!isActive()) return;
-  applyCodexAgentStatus(
-    codexResult.value,
-    savedCodexModel,
-    savedCodexReasoningEffort,
-    modelResult && !modelResult.error ? modelResult.models : [],
-  );
-  // When Codex (the MCP route) is available and the user has never pinned a
-  // model, make Codex the active model so the composer starts on the MCP
-  // backend instead of the configured default LLM.
-  const active = getActiveAgentModelChoice();
-  if (active && active.backend !== 'codex' && !loadAgentModelPref()) {
-    const codex = getAgentModelSnapshot().choices.find((choice) => choice.backend === 'codex');
-    if (codex) selectAgentModel(codex.id);
-  }
 }
 
 export function useAppRoute(): AppRoute {

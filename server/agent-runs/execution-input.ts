@@ -1,12 +1,10 @@
 import {
   defaultModelForProvider,
   normalizeLlmProvider,
-  resolveModelRequestPolicy,
   requireLlmProvider,
 } from '../../shared/llm-providers';
 import { resolveLlmProviderConfig } from '../llm-config';
 import { getKey, type KeyName } from '../keystore';
-import { copilotProviderForModel } from '../../shared/model-capabilities';
 import { serverRunBackend, type ServerRunInput } from './executor';
 import type { ValidatedCreateInput } from './request';
 import { digestValue } from './store-values';
@@ -22,30 +20,17 @@ export function resolveRunExecution(
   const requestedModel = input.model;
   const backend = serverRunBackend(body.backend);
   const readKey = (name: string): string => getKey(name as KeyName);
-  const config = backend === 'codex'
-    ? { provider: 'openai', model: '' }
-    : backend === 'claude-code'
-      ? { provider: 'anthropic', model: '' }
-      : backend === 'copilot'
-        ? { provider: copilotProviderForModel(requestedModel), model: '' }
-        : resolveLlmProviderConfig(requireLlmProvider(
-          provider === undefined || provider === null || provider === '' ? getKey('LLM_PROVIDER') : provider,
-        ), readKey);
+  const config = backend === 'claude-code'
+    ? { provider: 'anthropic', model: '' }
+    : resolveLlmProviderConfig(requireLlmProvider(provider), readKey);
   const effectiveProvider = normalizeLlmProvider(config.provider);
-  const effectiveModel = backend === 'copilot'
-    ? requestedModel
-    : requestedModel || config.model || defaultModelForProvider(effectiveProvider);
-  const openAiApiMode = resolveModelRequestPolicy(effectiveProvider, body.openAiApiMode).apiMode;
+  const effectiveModel = requestedModel || config.model || defaultModelForProvider(effectiveProvider);
   const tools = resolveServerRunToolCatalog(input.tools, askOnly);
   return {
     messages: input.messages,
     backend,
     provider: effectiveProvider,
     model: effectiveModel,
-    ...(backend === 'copilot' && typeof body.reasoningEffort === 'string'
-      && /^[A-Za-z0-9_-]{1,64}$/.test(body.reasoningEffort)
-      ? { reasoningEffort: body.reasoningEffort } : {}),
-    openAiApiMode,
     cacheMode: input.cacheMode,
     maxOutputTokens: input.maxOutputTokens,
     autonomousAcceptance: input.autonomousAcceptance,
@@ -77,11 +62,8 @@ export function runRequestDigests(
       context: input.context,
       provider: execution.provider,
       model: execution.model,
-      ...(execution.backend === 'copilot'
-        ? { backend: execution.backend, reasoningEffort: execution.reasoningEffort ?? null } : {}),
       ...(execution.backend === 'claude-code'
         ? { approvalMode: execution.approvalMode ?? null } : {}),
-      openAiApiMode: execution.openAiApiMode,
       cacheMode: execution.cacheMode,
       maxOutputTokens: execution.maxOutputTokens,
       autonomousAcceptance: execution.autonomousAcceptance,

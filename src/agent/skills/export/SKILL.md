@@ -55,7 +55,7 @@ Use `track_export` when the user asks about export/render status, or when the cu
 }
 ```
 
-For the latest project export, omit `renderIds` and pass `"latest": true`. `track_progress` is for generation/transcription/upload jobs, not render jobs.
+For the latest project export, omit `renderIds` and pass `"latest": true`. `track_progress` is for transcription/upload/visual-analysis jobs, not render jobs.
 
 For NLE XML, use `submit_export` with `format:"xml"`:
 

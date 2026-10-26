@@ -65,7 +65,7 @@ A state is useful only if the viewer can answer “what changed, why, and what r
 
 ## Time from narration first
 
-1. Obtain the matching voiceover or generated TTS and read its actual duration.
+1. Obtain the matching voiceover and read its actual duration.
 2. Split the section at spoken idea boundaries, not at equal time intervals.
 3. Mark phrase anchors: entity introduction, action verb, quantity, contrast, and conclusion.
 4. Place visual reveals at or just before the phrase they clarify. Do not reveal the conclusion before narration establishes it.
@@ -73,7 +73,7 @@ A state is useful only if the viewer can answer “what changed, why, and what r
 6. Align the animation and narration to the same section start and cover the full narration range unless the plan intentionally changes shots.
 7. If the actual audio is too short for the required states, tighten the diagram, split the section, or revise narration. Do not accelerate labels into unreadability.
 
-Never submit final narration-backed MG from script length alone, and never generate it in parallel with the TTS that determines its duration.
+Never submit final narration-backed MG from script length alone, and never generate it before the voiceover that determines its duration exists.
 
 ## Control information density and labels
 

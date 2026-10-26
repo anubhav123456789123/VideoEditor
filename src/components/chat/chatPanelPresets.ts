@@ -17,7 +17,7 @@ export const EMPTY_PROJECT_STARTERS: readonly ProjectStarter[] = [
   { label: '动态包装', description: '标题、数据卡与转场动效', prompt: '为当前内容设计动态包装，包含标题、信息卡和转场动效', icon: 'film' },
   { label: '长片拆条', description: '提炼高光并重排为短视频', prompt: '从当前长视频中提炼高光，重排成适合发布的短视频', icon: 'video' },
   { label: '产品故事', description: '围绕卖点组织脚本和镜头', prompt: '围绕产品卖点组织脚本和镜头，制作一支产品宣传短片', icon: 'sparkles' },
-  { label: 'AI 影像', description: '从概念生成镜头与声音', prompt: '根据我的概念策划一支 AI 影像，补全镜头、声音和节奏', icon: 'image' },
+  { label: '卡点混剪', description: '按音乐节拍剪辑素材', prompt: '用当前素材和背景音乐剪一支卡点混剪，镜头切换对齐音乐节拍', icon: 'image' },
   { label: '知识成片', description: '把主题整理成清晰讲解', prompt: '把主题整理成结构清晰、带字幕和视觉提示的讲解视频', icon: 'play' },
 ];
 

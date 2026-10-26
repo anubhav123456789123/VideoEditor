@@ -16,7 +16,7 @@ import {
   preferredTranscriptionLanguage,
   preferredTranscriptionProvider,
   transcribePathResumable,
-  type AssemblyAiProviderStatus,
+  type TranscriptionJobStatus,
 } from './provider';
 import {
   loadTranscriptionCheckpoint,
@@ -77,7 +77,7 @@ interface EnqueueOptions {
   asrPath?: string | null | Promise<string | null | undefined>;
 }
 
-function storedProviderStatus(status: AssemblyAiProviderStatus): TranscriptionProviderStatus {
+function storedProviderStatus(status: TranscriptionJobStatus): TranscriptionProviderStatus {
   if (status === 'uploaded') return 'uploaded';
   if (status === 'submitted') return 'submitted';
   if (status === 'completed') return 'completed';

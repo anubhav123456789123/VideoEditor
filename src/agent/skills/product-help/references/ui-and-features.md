@@ -6,9 +6,8 @@ The app opens on a project dashboard. If there are no projects, a sample project
 
 - **New project** — Create an empty project and open the editor.
 - **Scenario chips/cards** — In a new or empty AI conversation, users can pick workflow starters (inserts a starter prompt into the composer):
-  - **Seedance / AI video** — Generate AI video clips from a text description (needs a configured video provider key).
   - **App Promo** — Create a polished promotional video for an app or website.
-  - **URL to Ad Video** — Paste a product link to generate a short ad-style video (needs web + video providers as configured).
+  - **URL to Ad Video** — Paste a product link to build a short ad-style video from its page content and your media (needs the web key).
   - **Motion Graphics** — Generate animated visual elements from text or image references.
   - **Talking Head Editing** — Upload talking head footage; the agent picks the best takes, cuts filler words, tightens pacing, and adds motion graphics.
   - **Explainer Video** — Provide a topic (and optionally your own media); the agent creates a complete explainer video with AI narration, visuals, and background music.

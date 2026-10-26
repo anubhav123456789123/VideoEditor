@@ -1,6 +1,6 @@
 import type { AgentContext } from './context';
 import { TOOL_SCHEMAS } from './tools';
-import { executeCodexTool } from './runtime';
+import { executeAgentTool } from './runtime';
 import { ToolActivation } from './tool-activation';
 import type { AgentSettings } from './settings/agentSettings';
 import { draftContext } from './useAgentRun';
@@ -313,7 +313,7 @@ export class ServerRunToolExecutor {
     try {
       let update;
       try {
-        update = await executeCodexTool({
+        update = await executeAgentTool({
           name: request.name,
           args: request.args,
           activation: this.activation,

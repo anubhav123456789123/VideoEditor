@@ -6,7 +6,6 @@ import type { AgentToolSchema } from './tool-schema';
 import { ToolActivation } from './tool-activation';
 import { INITIAL } from '../editor/initial';
 import { docFromTimeline } from '../persist/projectStore';
-import { runCodexAgent } from './codex/runtime';
 import { runApiAgent } from './api-runtime';
 import { resolveModelCapabilities } from '../../shared/model-capabilities';
 import { attachAgentArtifactRef } from './runtime-artifact';
@@ -100,35 +99,6 @@ const schema = (name: string): AgentToolSchema => ({
   input_schema: { type: 'object', properties: {} },
 });
 const catalog = [schema('ToolSearch'), schema('submit_export')];
-const encoder = new TextEncoder();
-const originalFetch = globalThis.fetch;
-const codexTurns: Array<{ tools?: Array<{ name?: string }>; prompt?: string }> = [];
-let activeCodexTools = [{ name: 'ToolSearch', inputSchema: { type: 'object' } }];
-let codexReprepares = 0;
-globalThis.fetch = (async (input, init) => {
-  const path = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-  if (path === '/api/codex/tool-result') return new Response(null, { status: 200 });
-  if (path !== '/api/codex/turn') throw new Error(`Unexpected fetch: ${path}`);
-  codexTurns.push(JSON.parse(String(init?.body)) as (typeof codexTurns)[number]);
-  if (codexTurns.length === 1) {
-    const stream = new ReadableStream<Uint8Array>({
-      start(controller) {
-        controller.enqueue(encoder.encode(`${JSON.stringify({
-          type: 'tool-start',
-          callId: 'search-call',
-          name: 'ToolSearch',
-          args: { query: 'export' },
-        })}\n`));
-      },
-    });
-    return new Response(stream, { status: 200 });
-  }
-  const payload = [
-    { type: 'text-delta', delta: 'Export tools are ready.' },
-    { type: 'done' },
-  ].map((event) => JSON.stringify(event)).join('\n');
-  return new Response(`${payload}\n`, { status: 200 });
-}) as typeof fetch;
 const context: AgentContext = {
   commands: {} as AgentContext['commands'],
   getState: () => INITIAL,
@@ -138,63 +108,16 @@ const context: AgentContext = {
   audio: [],
   getProjectId: () => 'token-test',
 };
-try {
-  const codexResult = await runCodexAgent(
-    [{ role: 'user', content: 'Find an export tool.' }],
-    context,
-    () => undefined,
-    {
-      askOnly: true,
-      contextWindowTokens: 64_000,
-      contextWindowEstimated: false,
-      maxOutputTokens: 4_000,
-      tools: activeCodexTools,
-      resolveTools: () => activeCodexTools,
-      prepareContextForTools: async (messages) => {
-        codexReprepares += 1;
-        return {
-          messages: [
-            { role: 'assistant', content: 'Compacted ToolSearch checkpoint.' },
-            messages[messages.length - 1]!,
-          ],
-          compacted: true,
-        };
-      },
-      executeTool: async () => {
-        activeCodexTools = [
-          { name: 'submit_export', inputSchema: { type: 'object' } },
-        ];
-        return {
-          success: true,
-          result: { activatedTools: ['submit_export'] },
-          refreshTools: true,
-        };
-      },
-    },
-  );
-  assert.equal(codexTurns.length, 2, 'Codex restarts after ToolSearch expands the schema set');
-  assert.deepEqual(codexTurns[0]?.tools?.map((tool) => tool.name), ['ToolSearch']);
-  assert.deepEqual(codexTurns[1]?.tools?.map((tool) => tool.name), ['submit_export']);
-  assert.match(codexTurns[1]?.prompt ?? '', /activatedTools/);
-  assert.match(codexTurns[1]?.prompt ?? '', /Compacted ToolSearch checkpoint/);
-  assert.equal(codexReprepares, 1, 'Codex re-budgets the expanded schema request');
-  assert.equal(codexResult.at(-1)?.content, 'Export tools are ready.');
-  assert.equal(codexResult[0]?.content, 'Compacted ToolSearch checkpoint.',
-    'Codex persists the bounded checkpoint used for the refreshed request');
-  assert.doesNotMatch(JSON.stringify(codexResult), /Find an export tool/);
-} finally {
-  globalThis.fetch = originalFetch;
-}
 const apiChoice = {
-  id: 'openai:gpt-5',
+  id: 'anthropic:claude-opus-5-5',
   backend: 'api',
-  provider: 'openai',
-  providerLabel: 'OpenAI',
-  model: 'gpt-5',
+  provider: 'anthropic',
+  providerLabel: 'Claude',
+  model: 'claude-opus-5-5',
   capabilities: resolveModelCapabilities({
     backend: 'api',
-    provider: 'openai',
-    modelId: 'gpt-5',
+    provider: 'anthropic',
+    modelId: 'claude-opus-5-5',
   }),
 } as const;
 let apiPreparedTools: string[] = [];
@@ -309,56 +232,5 @@ const apiStreamErrorResult = await runApiAgent(
 );
 assert.equal(apiStreamErrorResult.length, 1, 'provider stream errors do not create fake responses');
 assert.equal(apiStreamErrors.some((message) => message.includes('provider stream failure test')), true);
-const base64 = 'a'.repeat(40_000);
-const submittedImageResult: {
-  current?: { result?: { __images?: Array<{ base64?: string }> } };
-} = {};
-globalThis.fetch = (async (input, init) => {
-  const path = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-  if (path === '/api/codex/tool-result') {
-    submittedImageResult.current = JSON.parse(String(init?.body)) as typeof submittedImageResult.current;
-    return new Response(null, { status: 200 });
-  }
-  if (path !== '/api/codex/turn') throw new Error(`Unexpected fetch: ${path}`);
-  const payload = [
-    {
-      type: 'tool-start',
-      callId: 'image-call',
-      name: 'view_asset_frames',
-      args: { assetId: 'asset-1' },
-    },
-    { type: 'done' },
-  ].map((event) => JSON.stringify(event)).join('\n');
-  return new Response(`${payload}\n`, { status: 200 });
-}) as typeof fetch;
-try {
-  const result = await runCodexAgent(
-    [{ role: 'user', content: 'Inspect the frame.' }],
-    context,
-    () => undefined,
-    {
-      askOnly: true,
-      contextWindowTokens: 64_000,
-      contextWindowEstimated: false,
-      maxOutputTokens: 4_000,
-      supportsImages: true,
-      tools: [{ name: 'view_asset_frames', inputSchema: { type: 'object' } }],
-      executeTool: async () => ({
-        success: true,
-        result: { note: 'frame', __images: [{ frame: 1, base64 }] },
-      }),
-    },
-  );
-  assert.equal(
-    submittedImageResult.current?.result?.__images?.[0]?.base64,
-    base64,
-    'Codex transport submits the original base64 image bytes',
-  );
-  assert.equal(JSON.stringify(result).includes(base64), false,
-    'persisted Codex history omits the binary image payload');
-} finally {
-  globalThis.fetch = originalFetch;
-}
-
 
 console.log('token efficiency checks passed');

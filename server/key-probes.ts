@@ -3,7 +3,6 @@
 // Or the request body overrides (the temporary value that has not been saved in the panel will only take effect for this detection and will not be saved).
 // Security invariant: The result only contains ok / message / status / latencyMs, and never echoes any key value;
 // The provider's error copy is flattened and truncated before entering the message. Align the endpoints and authentication headers of each provider call one by one
-// (Doubao audio-generation X-Api-Key / MiniMax base_resp / Gemini x-goog-api-key...).
 import { proxyDispatcher } from './outbound-proxy.ts';
 import { getKey, KEY_NAMES, type KeyName } from './keystore.ts';
 import { r2Probe } from './r2.ts';
@@ -14,27 +13,18 @@ import {
 } from './llm-config.ts';
 import {
   LLM_PROVIDER_PRESETS,
-  isLocalLlmProvider,
   llmProviderConfigNames,
-  protocolForProvider,
   type LlmProvider,
 } from '../shared/llm-providers.ts';
-import { versionedApiBaseUrl } from './plugins/media-provider-config.ts';
-import { resolveDoubaoSpeaker } from './plugins/voice-providers.ts';
-import { xaiOauthAccessToken } from './xai-oauth-session.ts';
 import {
   classifyStatus,
-  doubaoPostCheck,
-  minimaxPostCheck,
   networkMessage,
   parseModelCatalog,
-  parseTextModelCatalog,
   sanitizeProbeText,
   type ProbeResult,
 } from './key-probe-result.ts';
 import { PROBE_TIMEOUT_MS, runDataDirProbe, runProxyProbe } from './key-probe-local.ts';
 export { classifyStatus, networkMessage, parseModelCatalog, type ProbeResult } from './key-probe-result.ts';
-export { doubaoPostCheck, minimaxPostCheck } from './key-probe-result.ts';
 export { runDataDirProbe, runProxyProbe } from './key-probe-local.ts';
 // Proxy-aware fetch: attaches the configured outbound proxy (keystore
 // PROXY_URL or HTTPS_PROXY/HTTP_PROXY env) via undici dispatcher.
@@ -89,19 +79,12 @@ const base = (get: Get, name: KeyName, def: string): string => (get(name) || def
 const bearer = (key: string): Record<string, string> => ({ Authorization: `Bearer ${key}` });
 function llmProbe(provider: LlmProvider): ProbeDef {
   const names = llmProviderConfigNames(provider);
-  const protocol = protocolForProvider(provider);
   const apiKeyName = names.apiKey as KeyName;
   const baseUrlName = names.baseUrl as KeyName;
-  const isLocal = isLocalLlmProvider(provider);
   return {
-    needs: isLocal ? [[]] : [[apiKeyName]],
+    needs: [[apiKeyName]],
     run: (get) => {
-      const key = get(apiKeyName);
-      const headers = protocol === 'anthropic'
-        ? { 'x-api-key': key, 'anthropic-version': '2023-06-01' }
-        : protocol === 'google'
-          ? { 'x-goog-api-key': key }
-          : key ? bearer(key) : {};
+      const headers = { 'x-api-key': get(apiKeyName), 'anthropic-version': '2023-06-01' };
       const root = resolveLlmBaseUrl(provider, get(baseUrlName), AI_SDK_BASE_URL_FORMAT);
       return fetchWithProxy(`${root}/models`, { signal: t(), headers });
     },
@@ -114,242 +97,11 @@ export function sanitize(text: string): string {
   return sanitizeProbeText(text);
 }
 
-// The four capability pages of MiniMax share one detection: POST /v1/get_voice (free read-only;
-// The voice_cloning list is usually empty, minimal response).
-const minimaxProbe: ProbeDef = {
-  needs: [['MINIMAX_API_KEY']],
-  run: (get) => fetch(`${base(get, 'MINIMAX_BASE_URL', 'https://api.minimaxi.com')}/v1/get_voice`, {
-    method: 'POST', signal: t(),
-    headers: { 'Content-Type': 'application/json', ...bearer(get('MINIMAX_API_KEY')) },
-    body: JSON.stringify({ voice_type: 'voice_cloning' }),
-  }),
-  postCheck: minimaxPostCheck,
-};
-const atlasMusicProbe: ProbeDef = {
-  needs: [['ATLASCLOUD_API_KEY']],
-  run: async (get) => {
-    const root = base(get, 'ATLASCLOUD_API_BASE', 'https://api.atlascloud.ai/api/v1');
-    const response = await fetchWithProxy(`${root}/model/prediction/openchatcut-credential-probe`, {
-      signal: t(), headers: bearer(get('ATLASCLOUD_API_KEY')),
-    });
-    if (response.status !== 404) return response;
-    const body = await response.text().catch(() => '');
-    try {
-      const payload = JSON.parse(body) as { code?: number; message?: string };
-      if (payload.code === 404 && payload.message === 'not found') {
-        return new Response('{"authenticated":true}', { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
-    } catch {
-      // Preserve an unrecognized 404 so the common classifier reports a bad Base URL.
-    }
-    return new Response(body, { status: 404, headers: response.headers });
-  },
-};
-
-// BytePlus ModelArk: one account/key serves image (Seedream) and video (Seedance) alike —
-// both capability pages share this /models detection, same as minimaxProbe above.
-const byteplusProbe: ProbeDef = {
-  needs: [['BYTEPLUS_API_KEY']],
-  run: (get) => fetch(`${base(get, 'BYTEPLUS_BASE_URL', 'https://ark.ap-southeast.bytepluses.com/api/v3')}/models`, {
-    signal: t(), headers: bearer(get('BYTEPLUS_API_KEY')),
-  }),
-  models: parseModelCatalog,
-};
-
-const openAiMediaProbe: ProbeDef = {
-  needs: [['OPENAI_API_KEY']],
-  run: (get) => fetch(`${versionedApiBaseUrl(base(get, 'IMAGE_BASE_URL', 'https://api.openai.com'), 'v1')}/models`, {
-    signal: t(), headers: bearer(get('OPENAI_API_KEY')),
-  }),
-};
-
-const geminiMediaProbe: ProbeDef = {
-  needs: [['GEMINI_API_KEY']],
-  run: (get) => fetch(`${versionedApiBaseUrl(base(get, 'GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com'), 'v1beta')}/models?pageSize=1`, {
-    signal: t(), headers: { 'x-goog-api-key': get('GEMINI_API_KEY') },
-  }),
-};
-
-const mistralMediaProbe: ProbeDef = {
-  needs: [['LLM_MISTRAL_API_KEY']],
-  run: (get) => fetch(`${versionedApiBaseUrl(base(get, 'LLM_MISTRAL_BASE_URL', 'https://api.mistral.ai/v1'), 'v1')}/models`, {
-    signal: t(), headers: bearer(get('LLM_MISTRAL_API_KEY')),
-  }),
-};
-
-const deepgramProbe: ProbeDef = {
-  needs: [['DEEPGRAM_API_KEY']],
-  run: (get) => fetch('https://api.deepgram.com/v1/projects', {
-    signal: t(), headers: { Authorization: `Token ${get('DEEPGRAM_API_KEY')}` },
-  }),
-};
-
-const groqProbe: ProbeDef = {
-  needs: [['GROQ_API_KEY']],
-  run: (get) => fetch(`${base(get, 'GROQ_BASE_URL', 'https://api.groq.com/openai/v1')}/models`, {
-    signal: t(), headers: bearer(get('GROQ_API_KEY')),
-  }),
-};
-
-/** xAI media pages: one probe for image and video; the subscription session
- * token takes priority over the configured LLM API key. */
-const xaiMediaProbe: ProbeDef = {
-  needs: [['LLM_XAI_OAUTH_API_KEY'], ['LLM_XAI_API_KEY']],
-  run: (get) => {
-    const token = xaiOauthAccessToken() || get('LLM_XAI_API_KEY');
-    return fetchWithProxy(`${base(get, 'LLM_XAI_BASE_URL', 'https://api.x.ai/v1')}/models`, {
-      signal: t(), headers: token ? bearer(token) : {},
-    });
-  },
-  models: parseModelCatalog,
-};
-
-const elevenLabsProbe: ProbeDef = {
-  needs: [['ELEVENLABS_API_KEY']],
-  run: (get) => fetch(`${base(get, 'ELEVENLABS_BASE_URL', 'https://api.elevenlabs.io')}/v1/models`, {
-    signal: t(), headers: { 'xi-api-key': get('ELEVENLABS_API_KEY') },
-  }),
-};
-
-const cartesiaProbe: ProbeDef = {
-  needs: [['CARTESIA_API_KEY']],
-  run: (get) => fetch('https://api.cartesia.ai/voices?limit=1', {
-    signal: t(),
-    headers: {
-      Authorization: `Bearer ${get('CARTESIA_API_KEY')}`,
-      'Cartesia-Version': '2026-03-01',
-    },
-  }),
-};
-
-/** Requesty: the authenticated /models call checks the key, then the model list
- * comes from /models/managed, whose ids match the bundled capability catalog.
- * Falls back to the full /models list if the managed list is unavailable. */
-const requestyLlmProbe = llmProbe('requesty');
-const requestyProbe: ProbeDef = {
-  ...requestyLlmProbe,
-  run: async (get) => {
-    const checked = await requestyLlmProbe.run(get);
-    if (!checked.ok) return checked;
-    const root = resolveLlmBaseUrl('requesty', get('LLM_REQUESTY_BASE_URL'), AI_SDK_BASE_URL_FORMAT);
-    const managed = await fetchWithProxy(`${root}/models/managed`, { signal: t() }).catch(() => null);
-    return managed?.ok ? managed : checked;
-  },
-};
-
-const cheaperInferenceProbe: ProbeDef = {
-  ...llmProbe('cheaperinference'),
-  models: parseTextModelCatalog,
-};
-
-
-/** page key (same name as the vendor page key of settingsSchema) → detection definition.*/
 export const PROBES: Record<string, ProbeDef> = {
   ...Object.fromEntries(LLM_PROVIDER_PRESETS.map((preset) => [
     `llm/${preset.id}`,
     llmProbe(preset.id),
   ])),
-  'llm/requesty': requestyProbe,
-  'llm/cheaperinference': cheaperInferenceProbe,
-  'image/openai': {
-    needs: [['IMAGE_API_KEY'], ['OPENAI_API_KEY']],
-    run: (get) => fetch(`${base(get, 'IMAGE_BASE_URL', 'https://api.openai.com')}/v1/models`, {
-      signal: t(), headers: bearer(get('IMAGE_API_KEY') || get('OPENAI_API_KEY')),
-    }),
-  },
-  'image/gemini': geminiMediaProbe,
-  'image/minimax': minimaxProbe,
-  'image/byteplus': byteplusProbe,
-  'image/xai': xaiMediaProbe,
-  'image/wavespeed': {
-    needs: [['WAVESPEED_API_KEY']],
-    run: (get) => fetch(`${base(get, 'WAVESPEED_BASE_URL', 'https://api.wavespeed.ai')}/api/v3/balance`, {
-      signal: t(), headers: bearer(get('WAVESPEED_API_KEY')),
-    }),
-  },
-  'voice/elevenlabs': elevenLabsProbe,
-  'voice/openai': openAiMediaProbe,
-  'voice/gemini': geminiMediaProbe,
-  'voice/mistral': mistralMediaProbe,
-  'voice/cartesia': cartesiaProbe,
-  // Doubao 音频生成新版接口：X-Api-Key 单头鉴权；无免费探活端点，合成 1 个字做最小真实校验（成本可忽略）。
-  'voice/doubao': {
-    needs: [['DOUBAO_TTS_API_KEY']],
-    run: (get) => {
-      const root = base(get, 'DOUBAO_TTS_BASE_URL', 'https://openspeech.bytedance.com');
-      return fetch(root.endsWith('/api/v3/tts/create') ? root : `${root}/api/v3/tts/create`, {
-        method: 'POST', signal: t(),
-        headers: { 'Content-Type': 'application/json', 'X-Api-Key': get('DOUBAO_TTS_API_KEY') },
-        body: JSON.stringify({
-          model: get('DOUBAO_TTS_MODEL') || 'seed-audio-1.0',
-          text_prompt: '测',
-          references: [{ speaker: resolveDoubaoSpeaker(get('DOUBAO_TTS_VOICE_ID')) || 'zh_female_vv_uranus_bigtts' }],
-          audio_config: { format: 'mp3', sample_rate: 24_000 },
-        }),
-      });
-    },
-    postCheck: doubaoPostCheck,
-  },
-  'voice/minimax': minimaxProbe,
-  'voice/inworld': {
-    needs: [['INWORLD_TTS_API_KEY']],
-    run: (get) => fetch(`${base(get, 'INWORLD_TTS_BASE_URL', 'https://api.inworld.ai')}/voices/v1/voices`, {
-      signal: t(), headers: { Authorization: `Basic ${get('INWORLD_TTS_API_KEY')}` },
-    }),
-  },
-  'voice/fishaudio': {
-    needs: [['FISHAUDIO_TTS_API_KEY']],
-    run: (get) => fetch(`${base(get, 'FISHAUDIO_TTS_BASE_URL', 'https://api.fish.audio')}/model`, {
-      signal: t(), headers: bearer(get('FISHAUDIO_TTS_API_KEY')),
-    }),
-  },
-  // No free read-only endpoint is documented; synthesizing 1 word is the minimum real verification (negligible cost).
-  'voice/speechify': {
-    needs: [['SPEECHIFY_TTS_API_KEY']],
-    run: (get) => fetch(`${base(get, 'SPEECHIFY_TTS_BASE_URL', 'https://api.sws.speechify.com')}/v1/audio/speech`, {
-      method: 'POST', signal: t(),
-      headers: { 'Content-Type': 'application/json', ...bearer(get('SPEECHIFY_TTS_API_KEY')) },
-      body: JSON.stringify({ input: '测', voice_id: 'george', audio_format: 'mp3', model: get('SPEECHIFY_TTS_MODEL') || 'simba-multilingual' }),
-    }),
-  },
-  'video/seedance': {
-    needs: [['SEEDANCE_API_KEY']],
-    run: (get) => fetch(`${base(get, 'SEEDANCE_BASE_URL', 'https://ark.cn-beijing.volces.com/api/v3')}/contents/generations/tasks?page_num=1&page_size=1`, {
-      signal: t(), headers: bearer(get('SEEDANCE_API_KEY')),
-    }),
-  },
-  'video/kling': {
-    needs: [['KLING_API_KEY']],
-    run: (get) => fetch(`${base(get, 'KLING_BASE_URL', 'https://api-singapore.klingai.com')}/v1/videos/text2video?pageNum=1&pageSize=1`, {
-      signal: t(), headers: bearer(get('KLING_API_KEY')),
-    }),
-  },
-  'video/hailuo': minimaxProbe,
-  'video/byteplus': byteplusProbe,
-  'video/xai': xaiMediaProbe,
-  'video/ofox': {
-    needs: [['LLM_OFOX_API_KEY']],
-    run: (get) => fetch(`${base(get, 'LLM_OFOX_BASE_URL', 'https://api.ofox.ai/v1')}/models`, {
-      signal: t(), headers: bearer(get('LLM_OFOX_API_KEY')),
-    }),
-    models: parseModelCatalog,
-  },
-  'music/mureka': {
-    needs: [['MUREKA_API_KEY']],
-    run: (get) => fetch(`${base(get, 'MUREKA_BASE_URL', 'https://api.mureka.ai')}/v1/account/billing`, {
-      signal: t(), headers: bearer(get('MUREKA_API_KEY')),
-    }),
-  },
-  'music/minimax': minimaxProbe,
-  'music/atlas': atlasMusicProbe,
-  // Read-only account endpoint; fake key → 401. The same key also serves
-  // /generate/sound (video-to-SFX), so one probe covers both capabilities.
-  'music/sonilo': {
-    needs: [['SONILO_API_KEY']],
-    run: (get) => fetch(`${base(get, 'SONILO_BASE_URL', 'https://api.sonilo.com')}/v1/account/services`, {
-      signal: t(), headers: bearer(get('SONILO_API_KEY')),
-    }),
-  },
   // /v1/search has been opened to anonymous users (the measured number is 200 without key), and the key; collections cannot be detected
   // It is the account binding endpoint, and the fake key is stable 401.
   'stock/pexels': {
@@ -381,18 +133,6 @@ export const PROBES: Record<string, ProbeDef> = {
       return fetchWithProxy('https://freesound.org/apiv2/search/text/?' + params.toString(), { signal: t() });
     },
   },
-  'transcription/assemblyai': {
-    needs: [['ASSEMBLYAI_API_KEY']],
-    run: (get) => fetch('https://api.assemblyai.com/v2/transcript?limit=1', {
-      signal: t(), headers: { authorization: get('ASSEMBLYAI_API_KEY') },
-    }),
-  },
-  'transcription/openai': openAiMediaProbe,
-  'transcription/mistral': mistralMediaProbe,
-  'transcription/deepgram': deepgramProbe,
-  'transcription/groq': groqProbe,
-  'transcription/elevenlabs': elevenLabsProbe,
-  'transcription/cartesia': cartesiaProbe,
   'sandbox/e2b': {
     needs: [['E2B_API_KEY']],
     run: (get) => fetch('https://api.e2b.dev/sandboxes', {

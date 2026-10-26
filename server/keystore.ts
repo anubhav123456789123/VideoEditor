@@ -129,14 +129,9 @@ export function getKey(name: KeyName): string {
   return store.get(name) ?? "";
 }
 
-// Capability booleans derived from current key presence — SAME logic as config/vite.config.ts
+// Capability booleans derived from current key presence — SAME logic as next.config.ts
 // `define` snapshot, but computed live so the agent perceives runtime key changes.
 export interface Caps {
-  image: boolean;
-  voice: boolean;
-  video: boolean;
-  music: boolean;
-  sound: boolean;
   stock: boolean;
   transcription: boolean;
   sandbox: boolean;
@@ -146,45 +141,14 @@ export interface Caps {
 export function computeCaps(): Caps {
   const has = (n: KeyName): boolean => getKey(n).length > 0;
   return {
-    image:
-      has("IMAGE_API_KEY") ||
-      has("OPENAI_API_KEY") ||
-      has("GEMINI_API_KEY") ||
-      has("MINIMAX_API_KEY") ||
-      has("WAVESPEED_API_KEY") ||
-      has("BYTEPLUS_API_KEY") ||
-      has("FAL_KEY"),
-    voice:
-      has("DOUBAO_TTS_API_KEY") ||
-      has("ELEVENLABS_API_KEY") ||
-      has("MINIMAX_API_KEY") ||
-      has("INWORLD_TTS_API_KEY") ||
-      has("FISHAUDIO_TTS_API_KEY") ||
-      has("SPEECHIFY_TTS_API_KEY") ||
-      (getKey("PREFERRED_VOICE_VENDOR") === "openai" && has("OPENAI_API_KEY")) ||
-      (getKey("PREFERRED_VOICE_VENDOR") === "gemini" && has("GEMINI_API_KEY")) ||
-      (getKey("PREFERRED_VOICE_VENDOR") === "mistral" && has("LLM_MISTRAL_API_KEY")) ||
-      (getKey("PREFERRED_VOICE_VENDOR") === "cartesia" && has("CARTESIA_API_KEY")),
-    video:
-      has("SEEDANCE_API_KEY") || has("KLING_API_KEY") || has("MINIMAX_API_KEY") || has("BYTEPLUS_API_KEY")
-      || has("LLM_OFOX_API_KEY") || has("FAL_KEY"),
-    music: has("MUREKA_API_KEY") || has("MINIMAX_API_KEY") || has("ATLASCLOUD_API_KEY") || has("SONILO_API_KEY"),
-    sound: has("ELEVENLABS_API_KEY") || has("SONILO_API_KEY"),
     stock:
       has("PEXELS_API_KEY") ||
       has("PIXABAY_API_KEY") ||
       has("UNSPLASH_ACCESS_KEY") ||
       has("FREESOUND_API_KEY") ||
       has("FIRECRAWL_API_KEY"),
-    transcription:
-      getKey("PREFERRED_TRANSCRIPTION_PROVIDER") === "local" ||
-      has("ASSEMBLYAI_API_KEY") ||
-      (getKey("PREFERRED_TRANSCRIPTION_PROVIDER") === "openai" && has("OPENAI_API_KEY")) ||
-      (getKey("PREFERRED_TRANSCRIPTION_PROVIDER") === "mistral" && has("LLM_MISTRAL_API_KEY")) ||
-      (getKey("PREFERRED_TRANSCRIPTION_PROVIDER") === "deepgram" && has("DEEPGRAM_API_KEY")) ||
-      (getKey("PREFERRED_TRANSCRIPTION_PROVIDER") === "groq" && has("GROQ_API_KEY")) ||
-      (getKey("PREFERRED_TRANSCRIPTION_PROVIDER") === "elevenlabs" && has("ELEVENLABS_API_KEY")) ||
-      (getKey("PREFERRED_TRANSCRIPTION_PROVIDER") === "cartesia" && has("CARTESIA_API_KEY")),
+    // On-device Whisper needs no key, so transcription is always available.
+    transcription: true,
     sandbox: has("E2B_API_KEY"),
     web: has("FIRECRAWL_API_KEY"),
     storage:

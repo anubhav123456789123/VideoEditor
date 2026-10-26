@@ -7,7 +7,7 @@ description: "Use whenever the agent needs to add, create, hand-author, patch, o
 
 Use this skill when a OpenChatCut task requires a Motion Graphic asset that the agent will author or patch as inline JSX.
 
-This skill is for direct authoring. Do not translate the request into a Gemini prompt or generation brief, and do not call `submit_motion_graphic`, when this workflow is active.
+This skill is for direct authoring. Do not translate the request into a generation brief, and do not call `submit_motion_graphic`, when this workflow is active.
 
 Even though `submit_motion_graphic` exists in the tool list, treat it as the generation route, not this one. Ignore that path for MG work; use `create_motion_graphic_from_code` for new JSX assets and `edit_asset` for existing MG JSX. If the direct-authoring tools are missing, stop and report that the OpenChatCut tool surface is out of date.
 

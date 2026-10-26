@@ -1,7 +1,4 @@
-import {
-  isTranscriptionProviderId,
-  type TranscriptionProviderId,
-} from '../../transcript/types';
+import type { TranscriptionProviderId } from '../../transcript/types';
 // Agent settings that actually change code paths (not soft prompt hints).
 // Ask/YOLO controls proposal application and prompt behavior; built-in tools
 // execute directly in both modes.
@@ -192,13 +189,6 @@ export function createInlineThinkingExtractor(): {
 export function effectiveTranscriptionProvider(
   args?: Readonly<Record<string, unknown>>,
 ): TranscriptionProviderId {
-  if (args?.provider !== undefined) {
-    return isTranscriptionProviderId(args.provider) ? args.provider : 'assemblyai';
-  }
-  try {
-    const saved = globalThis.localStorage?.getItem('cc.transcriptionProvider');
-    return isTranscriptionProviderId(saved) ? saved : 'assemblyai';
-  } catch {
-    return 'assemblyai';
-  }
+  void args;
+  return 'local';
 }

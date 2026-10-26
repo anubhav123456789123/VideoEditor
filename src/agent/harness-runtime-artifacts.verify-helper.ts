@@ -23,7 +23,7 @@ import {
   startAgentRun,
   type AgentRunRecorder,
 } from './runtime-ledger';
-import { executeOpenChatCutTool } from './codex/runtime';
+import { executeOpenChatCutTool } from './tool-execution';
 import { execAgentRuntimeTool } from './tools/agent-runtime-tools';
 
 const projectId = 'harness-runtime-verify';

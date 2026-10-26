@@ -25,49 +25,9 @@ interface Rule {
 
 const RULES: Rule[] = [
   {
-    kind: 'image',
-    service: 'image generation (still keyframes / 图片生成)',
-    keywords: [
-      'dall-e', 'dalle', 'midjourney', 'stable diffusion', 'sdxl', 'flux',
-      'image generation', 'imagegen', 'text-to-image', '文生图', '生图', '图像生成', '图片生成',
-      'keyframe', 'keyframes', '关键帧画面',
-    ],
-  },
-  {
-    kind: 'video',
-    service: 'video generation (视频生成)',
-    keywords: [
-      'sora', 'kling', '可灵', 'seedance', 'runway', 'hailuo', '海螺', 'veo',
-      'gemini omni', 'text-to-video', '文生视频', '视频生成',
-    ],
-  },
-  {
-    kind: 'voice',
-    service: 'voice / TTS (配音/语音合成)',
-    keywords: [
-      'elevenlabs', 'doubao tts', 'minimax tts', 'inworld tts', 'fish audio tts',
-      'speechify tts', 'openai tts', 'gemini tts', 'mistral tts', 'cartesia tts',
-      'text-to-speech', 'tts ', '配音', '语音合成', 'voiceover', 'voice clone',
-      '语音克隆', 'indextts', 'narration voice',
-    ],
-  },
-  {
-    kind: 'music',
-    service: 'music generation (音乐生成)',
-    keywords: ['suno', 'music generation', '作曲', '音乐生成', 'bgm generation'],
-  },
-  {
-    kind: 'sound',
-    service: 'sound effects (音效)',
-    keywords: ['sound effects', 'sfx', '音效'],
-  },
-  {
     kind: 'transcription',
-    service: 'transcription via the configured provider (语音转写)',
-    keywords: [
-      'assemblyai', 'whisper', 'openai transcription', 'deepgram', 'groq transcription',
-      'elevenlabs scribe', 'cartesia ink', 'transcription', '转写',
-    ],
+    service: 'on-device transcription (语音转写)',
+    keywords: ['whisper', 'transcription', '转写'],
   },
   {
     kind: 'web',
@@ -81,7 +41,7 @@ const RULES: Rule[] = [
   },
   {
     kind: 'runtime',
-    service: 'external agent runtime (Codex / Claude Code / …)',
+    service: 'external agent runtime (Claude Code / …)',
     keywords: ['codex', 'claude code', 'openclaw', 'cursor', '~/.codex', 'desktop and cli'],
   },
   {
@@ -111,11 +71,6 @@ export function detectSkillDependencies(text: string): SkillDependency[] {
 }
 
 const CAP_LABEL: Record<CapabilityKey, string> = {
-  image: 'image generation (submit_image)',
-  voice: 'voice/TTS (submit_voice)',
-  video: 'video generation (submit_video)',
-  music: 'music generation (submit_music)',
-  sound: 'sound generation (submit_sound)',
   stock: 'stock media (search_stock_media)',
   transcription: 'transcription (transcribe_track)',
   sandbox: 'sandbox (run_code)',

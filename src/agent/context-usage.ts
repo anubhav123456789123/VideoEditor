@@ -33,10 +33,6 @@ export function usageNeedsChoiceRefresh(
 ): boolean {
   if (current?.modelId !== active.id) return true;
   const contextWindow = active.capabilities.contextWindowTokens;
-  if ((active.backend === 'codex' || active.backend === 'copilot')
-    && current.isEstimated === false
-    && current.contextWindowEstimated === false
-    && contextWindow.source !== 'settings-override') return false;
   return current.contextWindowTokens !== contextWindow.value
     || current.contextWindowEstimated !== contextWindow.estimated;
 }

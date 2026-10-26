@@ -80,7 +80,7 @@ export async function describeImageWithVision(
   purpose: VisionPurpose,
   signal?: AbortSignal,
 ): Promise<string> {
-  const model = await getLanguageModel(vision.provider, vision.model, vision.openAiApiMode);
+  const model = await getLanguageModel(vision.provider, vision.model);
   const { text } = await generateText({
     model,
     system: VISION_SYSTEM,

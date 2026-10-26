@@ -179,7 +179,7 @@ export function LocalAsrPane({ fields, ctx }: { fields: readonly SettingsField[]
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <VendorIcon vendor="openai" size={16} />
+        <VendorIcon vendor="localasr" size={16} />
         <span style={{ fontSize: 12, fontWeight: 600 }}>{t('默认模型')}</span>
       </div>
       {fields.map((field) => <FieldRow key={field.name} field={field} ctx={ctx} />)}
@@ -250,7 +250,7 @@ export function LocalAsrPane({ fields, ctx }: { fields: readonly SettingsField[]
               padding: '8px 10px', borderRadius: 8,
               border: `0.5px solid ${theme.border}`, background: theme.panel,
             }}>
-              <VendorIcon vendor="openai" size={18} />
+              <VendorIcon vendor="localasr" size={18} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 600 }}>{m.label}</div>
                 <div style={{ fontSize: 11, color: theme.textDim }}>

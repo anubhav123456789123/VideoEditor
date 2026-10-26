@@ -1,12 +1,4 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { createMoonshotAI } from '@ai-sdk/moonshotai';
-import { createAlibaba } from '@ai-sdk/alibaba';
-import { createDeepSeek } from '@ai-sdk/deepseek';
-import { createMistral } from '@ai-sdk/mistral';
-import { createOpenAI } from '@ai-sdk/openai';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { createXai } from '@ai-sdk/xai';
 import type {
   LanguageModelV4,
   LanguageModelV4FinishReason,
@@ -15,11 +7,7 @@ import type {
 } from '@ai-sdk/provider';
 import { wrapLanguageModel, type LanguageModelMiddleware } from 'ai';
 import type { AgentCacheMode } from '../../src/agent/settings/agentSettings';
-import {
-  resolveModelRequestPolicy,
-  type LlmProvider,
-  type OpenAiApiMode,
-} from '../../shared/llm-providers';
+import { resolveModelRequestPolicy, type LlmProvider } from '../../shared/llm-providers';
 
 function proxyOptions(provider: LlmProvider, origin: string): {
   baseURL: string;
@@ -35,23 +23,6 @@ function proxyOptions(provider: LlmProvider, origin: string): {
       'sec-fetch-site': 'same-origin',
     },
   };
-}
-
-function providerFactory(
-  provider: LlmProvider,
-  origin: string,
-): (modelId: string) => LanguageModelV4 {
-  const options = proxyOptions(provider, origin);
-  switch (provider) {
-    case 'anthropic': return createAnthropic(options);
-    case 'gemini': return createGoogleGenerativeAI(options);
-    case 'kimi': return createMoonshotAI(options);
-    case 'qwen': return createAlibaba(options);
-    case 'deepseek': return createDeepSeek(options);
-    case 'mistral': return createMistral(options);
-    case 'xai': return createXai(options);
-    default: return createOpenAICompatible({ name: provider, ...options });
-  }
 }
 
 /**
@@ -95,37 +66,21 @@ export const toolCallFinishReasonMiddleware: LanguageModelMiddleware = {
   },
 };
 
-function baseServerLanguageModel(
-  provider: LlmProvider,
-  modelId: string,
-  apiMode: OpenAiApiMode,
-  origin: string,
-): LanguageModelV4 {
-  const policy = resolveModelRequestPolicy(provider, apiMode);
-  if (policy.protocol === 'openai') {
-    const openai = createOpenAI(proxyOptions(provider, origin));
-    return policy.apiMode === 'chat' ? openai.chat(modelId) : openai.responses(modelId);
-  }
-  return providerFactory(provider, origin)(modelId);
-}
-
-/** Use the same local proxy and provider-specific SDKs as the browser Agent. */
+/** Claude through the same local key-injecting proxy as the browser Agent. */
 export function createServerLanguageModel(
   provider: LlmProvider,
   modelId: string,
-  apiMode: OpenAiApiMode,
   origin: string,
 ): LanguageModelV4 {
   return wrapLanguageModel({
-    model: baseServerLanguageModel(provider, modelId, apiMode, origin),
+    model: createAnthropic(proxyOptions(provider, origin))(modelId),
     middleware: toolCallFinishReasonMiddleware,
   });
 }
 
 export function serverProviderOptions(
   provider: LlmProvider,
-  apiMode: OpenAiApiMode,
   cacheMode: AgentCacheMode,
 ): SharedV4ProviderOptions | undefined {
-  return resolveModelRequestPolicy(provider, apiMode, cacheMode).providerOptions;
+  return resolveModelRequestPolicy(provider, cacheMode).providerOptions;
 }

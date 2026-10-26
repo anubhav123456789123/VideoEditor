@@ -447,6 +447,16 @@ const overrides: Record<string, string> = {
   '默认工程位置': 'Posizione predefinita dei progetti',
   '新建工程、历史版本和应用生成的素材保存在这里。桌面端从外部拖入的文件和文件夹保留在原位置，工程只建立引用；浏览器运行时会上传托管副本。修改后重启应用生效。': 'Qui vengono salvati i nuovi progetti, la cronologia delle versioni e i media generati dall’app. Sul desktop i file e le cartelle trascinati dall’esterno restano nella posizione originale e il progetto crea solo un riferimento; nel browser viene caricata una copia gestita. La modifica si applica dopo il riavvio.',
   '未配置时素材只存本机。配置后：每次上传同步写入 R2（桶保持私有，读取经本地服务回源，src 路径不变）；本机缺文件时自动从云端取回。改动即时生效。R2 控制台建桶 → R2 API Token（Object Read & Write）即可拿到下面四个值。': 'Senza configurazione i media restano solo sul computer. Dopo la configurazione ogni caricamento viene scritto anche su R2; il bucket resta privato, la lettura passa dal servizio locale e il percorso src non cambia. Se manca un file locale, viene recuperato automaticamente dal cloud. Le modifiche hanno effetto immediato. Crea un bucket nella console R2 e un token API R2 con Object Read & Write per ottenere i quattro valori seguenti.',
+  '一键写入 ~/.claude.json，Claude 订阅用户直连。': 'Scrive ~/.claude.json con un clic, così gli abbonati Claude si collegano direttamente.',
+  '或在终端运行以下命令完成注册。': 'Oppure esegui questo comando nel terminale per registrarlo.',
+  '粘贴 Anthropic API Key 即可与 Claude 对话并让它直接编辑时间线。也可以在「Claude Code」页使用 Claude 订阅登录。': 'Incolla una API key Anthropic per parlare con Claude e lasciargli modificare direttamente la timeline. Puoi anche accedere con un abbonamento Claude nella pagina "Claude Code".',
+  '素材进入媒体池后是否立即转写。本地 Whisper 免费且在本机运行。': 'Se trascrivere i media appena entrano nel media pool. Whisper locale è gratuito e gira su questo computer.',
+  '访问 Claude API 失败时，可在此填写本地代理地址（如 http://127.0.0.1:7890）。留空则使用系统环境变量（HTTPS_PROXY / HTTP_PROXY）。': 'Se l\'API Claude non è raggiungibile, inserisci qui l\'indirizzo di un proxy locale (es. http://127.0.0.1:7890). Lascia vuoto per usare le variabili d\'ambiente di sistema (HTTPS_PROXY / HTTP_PROXY).',
+  '语音识别': 'Riconoscimento vocale',
+  '请先在设置中配置 Claude（API Key 或 Claude Code）。': 'Configura prima Claude nelle Impostazioni (API key o Claude Code).',
+  '跟随界面语言': 'Segui la lingua dell\'interfaccia',
+  '连接后重启 Claude Code 生效。': 'Riavvia Claude Code dopo la connessione per rendere effettiva la modifica.',
+  '转写': 'Trascrizione',
 };
 
 export default overrides;

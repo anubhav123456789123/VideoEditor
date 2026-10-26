@@ -10,14 +10,14 @@ import { parseSkillFrontmatter } from './skill-frontmatter';
 
 const SKILLS_DIR = dirname(fileURLToPath(import.meta.url));  // check 与技能内容同目录
 const EXPECTED = [
-  'ai-cinematic-short-film', 'asset-import', 'batch-montage-variants', 'beat-sync-montage',
+  'asset-import', 'batch-montage-variants', 'beat-sync-montage',
   'create-motion-graphics', 'ecommerce-product-montage', 'explainer-video',
-  'export', 'image-gen', 'known-errors', 'livestream-to-clips', 'long-video-to-shorts',
+  'export', 'known-errors', 'livestream-to-clips', 'long-video-to-shorts',
   'motion-graphic-placement',
-  'multi-clips-to-reels', 'music', 'music-intelligence', 'news-rough-cut',
+  'multi-clips-to-reels', 'music-intelligence', 'news-rough-cut',
   'openchatcut-plugin-basics', 'product-ad-video-script',
   'product-help', 'shader-gen', 'skill-creator', 'storyboard-shot-breakdown', 'talking-head-guide',
-  'transcription', 'verification', 'video-gen', 'video-thumbnail-generator', 'voice',
+  'transcription', 'verification', 'video-thumbnail-generator',
   'widget-forms',
 ];
 
@@ -45,8 +45,8 @@ const block = parseSkillFrontmatter('---\nname: c\ndescription: |\n  Line one\n 
 assert.strictEqual(block.description, 'Line one line two.', '`|` 块 description 拼接并在下个 key 处停止');
 assert.strictEqual(block.body, 'BODY', '块 description 不吞掉正文');
 
-// A known skill loads a real support file (voice/references/voices.md exists on disk).
-const voiceRef = readFileSync(join(SKILLS_DIR, 'voice', 'references', 'voices.md'), 'utf8');
+// A known skill loads a real support file (product-help/references/providers-and-keys.md exists on disk).
+const voiceRef = readFileSync(join(SKILLS_DIR, 'product-help', 'references', 'providers-and-keys.md'), 'utf8');
 assert.ok(voiceRef.length > 0, 'references 支撑文件也随技能搬来');
 
 console.log(`plugin-skills.check: ok (${slugs.length} 技能 / frontmatter 三形态 / references 齐)`);

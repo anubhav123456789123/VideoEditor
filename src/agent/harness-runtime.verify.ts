@@ -19,7 +19,7 @@ import {
   type ToolOutcomeInput,
 } from './runtime-ledger';
 import { ExternalSessionRunLedger } from './external-run-ledger';
-import { executeOpenChatCutTool, type CodexToolExecution } from './codex/runtime';
+import { executeOpenChatCutTool, type ToolExecution } from './tool-execution';
 import type { AgentToolSchema } from './tool-schema';
 import { computeAgentRequestShapeFingerprint } from './runtime';
 import type { Proposal } from './proposal';
@@ -71,7 +71,7 @@ async function executeWithRecorder(
 async function executeInstallSkill(
   log: string[],
   executeTool: () => Promise<unknown>,
-): Promise<CodexToolExecution> {
+): Promise<ToolExecution> {
   return executeOpenChatCutTool(installSkillSchema, { repo: 'owner/skill' }, {
     ctx, settings, runRecorder: fakeRecorder(log), toolCallId: crypto.randomUUID(),
     toolCatalog: TOOL_SCHEMAS, activeToolCatalog: [installSkillSchema],

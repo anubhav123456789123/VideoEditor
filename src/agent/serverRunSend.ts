@@ -109,12 +109,8 @@ async function prepareServerRunPayload(
     || !trimmed
     || refs.running.current) return null;
   const choice = getActiveAgentModelChoice();
-  if (!choice
-    || (choice.backend !== 'api'
-      && choice.backend !== 'codex'
-      && choice.backend !== 'copilot'
-      && choice.backend !== 'claude-code')) {
-    environment.appendMessage({ role: 'error', text: '服务端运行仅支持已配置的 API / Codex / Copilot / Claude Code 模型。' });
+  if (!choice || (choice.backend !== 'api' && choice.backend !== 'claude-code')) {
+    environment.appendMessage({ role: 'error', text: '请先在设置中配置 Claude（API Key 或 Claude Code）。' });
     return null;
   }
   return buildPreparedServerRun({

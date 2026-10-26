@@ -20,7 +20,7 @@ try {
     mkdir(checkout, { recursive: true }),
     mkdir(profileRoot, { recursive: true, mode: 0o700 }),
   ]);
-  await writeFile(checkoutEnv, 'OPENAI_API_KEY=checkout-secret\n', 'utf8');
+  await writeFile(checkoutEnv, 'PEXELS_API_KEY=checkout-secret\n', 'utf8');
   process.chdir(checkout);
   // os.homedir() resolves USERPROFILE on Windows; HOME alone only covers POSIX.
   process.env.HOME = home;
@@ -28,13 +28,13 @@ try {
   process.env.OPENCHATCUT_DEV_PROFILE_ID = profileId;
   // Intentional module-boundary test: cwd, HOME, and profile ID must be set before initialization.
   const { setKeys } = await import('./keystore.ts');
-  await setKeys({ OPENAI_API_KEY: 'isolated-secret', LLM_MODEL: 'isolated-model' });
+  await setKeys({ PEXELS_API_KEY: 'isolated-secret', LLM_MODEL: 'isolated-model' });
 
-  assert.equal(await readFile(checkoutEnv, 'utf8'), 'OPENAI_API_KEY=checkout-secret\n');
-  assert.match(await readFile(profileEnv, 'utf8'), /OPENAI_API_KEY=isolated-secret/);
+  assert.equal(await readFile(checkoutEnv, 'utf8'), 'PEXELS_API_KEY=checkout-secret\n');
+  assert.match(await readFile(profileEnv, 'utf8'), /PEXELS_API_KEY=isolated-secret/);
   assert.match(await readFile(profileEnv, 'utf8'), /LLM_MODEL=isolated-model/);
-  await setKeys({ OPENAI_API_KEY: '' });
-  assert.match(await readFile(profileEnv, 'utf8'), /^OPENAI_API_KEY=$/m);
+  await setKeys({ PEXELS_API_KEY: '' });
+  assert.match(await readFile(profileEnv, 'utf8'), /^PEXELS_API_KEY=$/m);
   if (process.platform !== 'win32') assert.equal((await stat(profileEnv)).mode & 0o777, 0o600);
 } finally {
   process.chdir(previousCwd);

@@ -20,11 +20,9 @@ The Gemini Omni motion pass animates the layers.
 Scripts need npm install; run them through the run_code sandbox.`;
 
 const capsAllOn = (): Record<CapabilityKey, boolean> => ({
-  image: true, voice: true, video: true, music: true, sound: true,
   stock: true, transcription: true, sandbox: true, web: true,
 });
 const capsAllOff = (): Record<CapabilityKey, boolean> => ({
-  image: false, voice: false, video: false, music: false, sound: false,
   stock: false, transcription: false, sandbox: false, web: false,
 });
 
@@ -32,7 +30,7 @@ const capsAllOff = (): Record<CapabilityKey, boolean> => ({
 
 const deps = detectSkillDependencies(SAMPLE);
 const kinds = deps.map((d) => d.kind);
-for (const expected of ['runtime', 'image', 'video', 'voice', 'sound', 'ffmpeg'] as const) {
+for (const expected of ['runtime', 'ffmpeg'] as const) {
   assert.ok(kinds.includes(expected), `expected dependency kind ${expected}, got ${kinds.join(',')}`);
 }
 // sandbox hints (shell commands, npm install) should also surface

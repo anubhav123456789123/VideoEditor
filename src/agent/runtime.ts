@@ -3,7 +3,7 @@ import type { AgentContext } from './context';
 import type { AgentRunRecorder } from './runtime-ledger';
 import type { HarnessToolExecutionContext } from './harness-context';
 import type { AgentSettings } from './settings/agentSettings';
-import { executeOpenChatCutTool, type CodexToolExecution } from './codex/runtime';
+import { executeOpenChatCutTool, type ToolExecution } from './tool-execution';
 import {
   estimateTextTokens,
   verifyCanonicalContextCheckpoint,
@@ -117,7 +117,7 @@ export async function computeAgentRequestShapeFingerprint(
     toolSchemaDigest: shape.toolSchemaDigest,
   };
 }
-export interface CodexToolRequest {
+export interface AgentToolRequest {
   readonly name: string;
   readonly args: Record<string, unknown>;
   readonly activation: ToolActivation;
@@ -131,9 +131,9 @@ export interface CodexToolRequest {
   readonly onFollowup?: (text: string) => void;
 }
 
-export async function executeCodexTool(request: CodexToolRequest): Promise<{
+export async function executeAgentTool(request: AgentToolRequest): Promise<{
   readonly activation: ToolActivation;
-  readonly execution: CodexToolExecution;
+  readonly execution: ToolExecution;
 }> {
   const {
     name, args, activation, ctx, onEvent, settings, runRecorder,
@@ -143,7 +143,7 @@ export async function executeCodexTool(request: CodexToolRequest): Promise<{
   if (!schema) {
     return {
       activation,
-      execution: { success: false, result: { error: `Unknown Codex tool: ${name}` } },
+      execution: { success: false, result: { error: `Unknown tool: ${name}` } },
     };
   }
   // A model may remember a tool it used earlier in the conversation even though

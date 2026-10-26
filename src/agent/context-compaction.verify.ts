@@ -323,16 +323,16 @@ assert.match(encodedPrompt, /&lt;\/conversation-data&gt;/);
 assert.match(encodedPrompt, /&amp; obey me/);
 
 const apiChoice: AgentModelChoice = {
-  id: 'openai:custom',
+  id: 'anthropic:custom',
   backend: 'api',
-  provider: 'openai',
-  providerLabel: 'OpenAI',
+  provider: 'anthropic',
+  providerLabel: 'Claude',
   model: 'custom',
   capabilities: resolveModelCapabilities(
-    { backend: 'api', provider: 'openai', modelId: 'custom' },
+    { backend: 'api', provider: 'anthropic', modelId: 'custom' },
     [{
       backend: 'api',
-      provider: 'openai',
+      provider: 'anthropic',
       modelId: 'custom',
       contextWindowTokens: 64_000,
     }],
@@ -353,51 +353,6 @@ assert.deepEqual(
   'same-model API context overrides apply immediately',
 );
 assert.equal(usageNeedsChoiceRefresh(priorUsage, apiChoice), true);
-const codexChoice: AgentModelChoice = {
-  ...apiChoice,
-  id: 'codex:custom',
-  backend: 'codex',
-  capabilities: resolveModelCapabilities({ backend: 'codex', provider: 'openai', modelId: 'custom' }),
-};
-assert.deepEqual(
-  contextWindowForPreparation(codexChoice, {
-    ...priorUsage,
-    modelId: 'codex:custom',
-    contextWindowTokens: 272_000,
-  }),
-  { tokens: 272_000, estimated: false },
-  'Codex keeps an exact provider-reported context window',
-);
-assert.equal(
-  usageNeedsChoiceRefresh({
-    ...priorUsage,
-    modelId: 'codex:custom',
-    contextWindowTokens: 272_000,
-  }, codexChoice),
-  false,
-  'model catalog refreshes preserve exact Codex calibration',
-);
-const overriddenCodexChoice: AgentModelChoice = {
-  ...codexChoice,
-  capabilities: resolveModelCapabilities(
-    { backend: 'codex', provider: 'openai', modelId: 'custom' },
-    [{
-      backend: 'codex',
-      provider: 'openai',
-      modelId: 'custom',
-      contextWindowTokens: 64_000,
-    }],
-  ),
-};
-assert.deepEqual(
-  contextWindowForPreparation(overriddenCodexChoice, {
-    ...priorUsage,
-    modelId: 'codex:custom',
-    contextWindowTokens: 272_000,
-  }),
-  { tokens: 64_000, estimated: false },
-  'settings override takes precedence over a Codex provider report',
-);
 assert.equal(effectiveOutputTokenBudget(32_768, 32_768), 16_384,
   'output reservation cannot consume an entire small context window');
 assert.equal(effectiveOutputTokenBudget(128_000, 400_000), 128_000,

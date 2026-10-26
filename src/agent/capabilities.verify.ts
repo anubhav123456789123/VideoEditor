@@ -1,116 +1,63 @@
 // capabilities.verify.ts — mode-aware provider routing: on/off partition, fallback
-// (no vite define) fallback of the configured-capabilities manifest.
+// (no Next define) fallback of the configured-capabilities manifest.
 //   npx tsx src/agent/capabilities.verify.ts
 import assert from 'node:assert/strict';
 import { applyLiveKeyStatus, applyLiveModels, capabilitiesPrompt, CONFIGURED_CAPS, type CapabilityKey } from './capabilities';
 
 const ALL_OFF: Record<CapabilityKey, boolean> = {
-  image: false, voice: false, video: false, music: false, sound: false,
   stock: false, transcription: false, sandbox: false, web: false,
 };
 
-// ── all-off: every gated tool listed as 未配置, none marked available ──
+// ── all-off: every gated tool listed as not configured, none marked available ──
 const off = capabilitiesPrompt(ALL_OFF);
-assert.ok(off.includes('submit_image') && off.includes('submit_voice') && off.includes('run_code'), 'lists gated tools');
+assert.ok(off.includes('search_stock_media') && off.includes('transcribe_track') && off.includes('run_code'), 'lists gated tools');
 assert.ok(off.includes('(no key-gated capabilities)'), 'no capability marked available when all off');
 assert.ok(off.includes('push_asset'), 'includes a fallback hint for an off capability');
+assert.ok(!/submit_(image|voice|video|music|sound)/.test(off), 'generation tools are gone from the manifest');
 
-// ── mixed: image + transcription on → they sit in the ✅ section, voice in the ⬜ section ──
-const mixed = capabilitiesPrompt({ ...ALL_OFF, image: true, transcription: true });
+// ── mixed: stock + transcription on → ✅ section; sandbox in the ⬜ section ──
+const mixed = capabilitiesPrompt({ ...ALL_OFF, stock: true, transcription: true });
 const onIdx = mixed.indexOf('✅');
 const offIdx = mixed.indexOf('⬜');
 assert.ok(onIdx >= 0 && offIdx > onIdx, 'both sections present, ✅ before ⬜');
 const onLine = mixed.slice(onIdx, offIdx);
-assert.ok(onLine.includes('submit_image') && onLine.includes('transcribe_track'), 'configured caps in ✅ section');
-assert.ok(!onLine.includes('submit_voice'), 'unconfigured cap NOT in ✅ section');
-assert.ok(mixed.slice(offIdx).includes('submit_voice'), 'unconfigured cap in ⬜ section');
+assert.ok(onLine.includes('search_stock_media') && onLine.includes('transcribe_track'), 'configured caps in ✅ section');
+assert.ok(!onLine.includes('run_code'), 'unconfigured cap NOT in ✅ section');
+assert.ok(mixed.slice(offIdx).includes('run_code'), 'unconfigured cap in ⬜ section');
 
 // ── vendor granularity + routing semantics ──
-// single configured vendor → named with its tool arg and "直接用"
-applyLiveKeyStatus({ KLING_API_KEY: { configured: true } });
-const vendored = capabilitiesPrompt({ ...ALL_OFF, video: true });
-assert.ok(vendored.includes('Kling(model=kling) — use it directly'), 'single vendor → use directly');
-assert.ok(!vendored.includes('seedance2'), 'unconfigured vendor NOT listed');
+// single configured vendor → named with its tool arg and "use it directly"
+applyLiveKeyStatus({ PEXELS_API_KEY: { configured: true } });
+const single = capabilitiesPrompt({ ...ALL_OFF, stock: true });
+assert.ok(single.includes('Pexels(provider=pexels) — use it directly'), 'single vendor → use directly');
+assert.ok(!single.includes('Pixabay(provider=pixabay)'), 'unconfigured vendor NOT listed');
 
-applyLiveKeyStatus({ FAL_KEY: { configured: true } });
-const falRouted = capabilitiesPrompt({ ...ALL_OFF, image: true, video: true });
-assert.ok(falRouted.includes('Fal.ai(model=fal)'), 'Fal key enables an explicit provider');
-assert.ok(!falRouted.includes('Seedance(model=seedance2)'), 'Fal does not impersonate native providers');
-assert.ok(falRouted.includes('No Fal model selected'), 'unset Fal default asks for a model');
-applyLiveModels({ FAL_IMAGE_MODEL: 'nano-banana-2' });
-const falDefault = capabilitiesPrompt({ ...ALL_OFF, image: true });
-assert.ok(falDefault.includes('Saved Fal default: nano-banana-2'), 'selected Fal model reaches the assistant');
-applyLiveModels({});
+// several stock vendors and no routing preference key → listed, never forced to ask
+applyLiveKeyStatus({ PEXELS_API_KEY: { configured: true }, PIXABAY_API_KEY: { configured: true } });
+const several = capabilitiesPrompt({ ...ALL_OFF, stock: true }, 'manual');
+assert.ok(several.includes('Pexels(provider=pexels)') && several.includes('Pixabay(provider=pixabay)'), 'options listed');
+assert.ok(!several.includes('ask_followup_questions'), 'stock has no routing default to ask about');
 
-// one minimax key lights all its vendor rows
-applyLiveKeyStatus({ MINIMAX_API_KEY: { configured: true } });
-const mm = capabilitiesPrompt({ ...ALL_OFF, video: true, image: true, voice: true, music: true });
-assert.ok(mm.includes('Hailuo(model=hailuo)') && mm.includes('MiniMax(model=image-01)')
-  && mm.includes('MiniMax(provider=minimax)'), 'one minimax key lights all its vendor rows');
-
-applyLiveKeyStatus({ ATLASCLOUD_API_KEY: { configured: true } });
-const atlas = capabilitiesPrompt({ ...ALL_OFF, music: true });
-assert.ok(atlas.includes('Atlas Cloud(provider=atlas)'), 'Atlas key lights the Atlas music route');
-
-// Doubao needs its API key: unconfigured status hides the vendor
-applyLiveKeyStatus({});
-const half = capabilitiesPrompt({ ...ALL_OFF, voice: true });
-assert.ok(!half.includes('Doubao(provider=doubao)'), 'doubao without API key stays hidden');
-
-// saved Doubao default speaker reaches the agent so it can be passed verbatim
-applyLiveKeyStatus({ DOUBAO_TTS_API_KEY: { configured: true }, DOUBAO_TTS_VOICE_ID: { configured: true } });
-applyLiveModels({ DOUBAO_TTS_VOICE_ID: 'S_5wulnA7i2' });
-const doubaoDefault = capabilitiesPrompt({ ...ALL_OFF, voice: true });
-assert.ok(doubaoDefault.includes('Doubao(provider=doubao)'), 'configured Doubao is selectable');
-assert.ok(doubaoDefault.includes('Doubao default speaker ID: S_5wulnA7i2'), 'saved speaker reaches the agent');
+// on-device transcription is keyless and is the default route
 applyLiveKeyStatus({});
 applyLiveModels({});
-
-// several vendors + NO user default → agent must ask before first use
-applyLiveKeyStatus({ KLING_API_KEY: { configured: true }, SEEDANCE_API_KEY: { configured: true } });
+const local = capabilitiesPrompt({ ...ALL_OFF, transcription: true });
+assert.ok(local.includes('default: Local Whisper(provider=local) — use it without asking again'),
+  'local Whisper is the default transcription route');
+applyLiveModels({ PREFERRED_TRANSCRIPTION_PROVIDER: 'local' });
+assert.ok(capabilitiesPrompt({ ...ALL_OFF, transcription: true })
+  .includes('user default: Local Whisper(provider=local)'), 'a saved default is honored');
 applyLiveModels({});
-const askFirst = capabilitiesPrompt({ ...ALL_OFF, video: true });
-assert.ok(askFirst.includes('ask_followup_questions'), 'no default + several vendors → ask the user first');
-assert.ok(askFirst.includes('Seedance(model=seedance2)') && askFirst.includes('Kling(model=kling)'), 'options listed');
-
-// user default set → use it, never ask
-applyLiveModels({ PREFERRED_VIDEO_VENDOR: 'kling' });
-const preferred = capabilitiesPrompt({ ...ALL_OFF, video: true });
-assert.ok(preferred.includes('user default: Kling(model=kling) — use it without asking again'), 'user default honored');
-assert.ok(!preferred.includes('ask_followup_questions'), 'no ask when default set');
-
-// default points at an UNCONFIGURED vendor → falls back to ask (not blindly honored)
-applyLiveModels({ PREFERRED_VIDEO_VENDOR: 'hailuo' });
-const stalePref = capabilitiesPrompt({ ...ALL_OFF, video: true });
-assert.ok(stalePref.includes('ask_followup_questions'), 'default for unconfigured vendor → ask instead');
-
-// several vendors + AUTO mode (user delegated) → agent picks freely, no forced ask
-applyLiveKeyStatus({ KLING_API_KEY: { configured: true }, SEEDANCE_API_KEY: { configured: true } });
-applyLiveModels({});
-const autoMode = capabilitiesPrompt({ ...ALL_OFF, video: true }, 'auto');
-assert.ok(!autoMode.includes('ask_followup_questions'), 'auto mode → no forced ask before first use');
-assert.ok(autoMode.includes('pick the most suitable one yourself'), 'auto mode → agent picks and states the reason');
-
-// several vendors + MANUAL mode → still asks (regression)
-const manualMode = capabilitiesPrompt({ ...ALL_OFF, video: true }, 'manual');
-assert.ok(manualMode.includes('ask_followup_questions'), 'manual mode → ask before first use');
 
 // the provider-choice rule names the routing ladder and pins choice to the list
-assert.ok(autoMode.includes('user default → single provider → ask once in manual mode → pick freely in auto mode'),
+const auto = capabilitiesPrompt({ ...ALL_OFF, stock: true }, 'auto');
+assert.ok(auto.includes('user default → single provider → ask once in manual mode → pick freely in auto mode'),
   'provider-choice rule documents the routing ladder');
-assert.ok(autoMode.includes('Never use a provider that is not in the list above'), 'choice pinned to configured list');
-assert.ok(autoMode.includes('guide them to Settings'), 'unconfigured capability points to Settings');
+assert.ok(auto.includes('Never use a provider that is not in the list above'), 'choice pinned to configured list');
+assert.ok(auto.includes('guide them to Settings'), 'unconfigured capability points to Settings');
 
-// ── tsx (no vite define): CONFIGURED_CAPS falls back to all-false without throwing ──
-assert.equal(typeof CONFIGURED_CAPS.image, 'boolean', 'CONFIGURED_CAPS resolves under tsx (all-false fallback, no ReferenceError)');
-assert.equal(CONFIGURED_CAPS.image, false, 'fallback is all-false outside Vite');
-
-applyLiveKeyStatus({ LLM_OFOX_API_KEY: { configured: true }, IMAGE_API_KEY: { configured: true } });
-applyLiveModels({ PREFERRED_VIDEO_VENDOR: 'ofox' });
-const ofox = capabilitiesPrompt({ ...ALL_OFF, video: true, image: true });
-assert.ok(ofox.includes('Video generation(submit_video · user default: OFox(model=ofox)'));
-assert.ok(ofox.includes('Image generation(submit_image · available: gpt-image(model=gpt-image-2) — use it directly)'));
-applyLiveKeyStatus({});
-assert.ok(!capabilitiesPrompt({ ...ALL_OFF, video: true }).includes('OFox(model=ofox)'), 'unconfigured OFox stays hidden');
+// ── tsx (no Next define): CONFIGURED_CAPS falls back to all-false without throwing ──
+assert.equal(typeof CONFIGURED_CAPS.stock, 'boolean', 'CONFIGURED_CAPS resolves under tsx (all-false fallback, no ReferenceError)');
+assert.equal(CONFIGURED_CAPS.stock, false, 'fallback is all-false outside the Next bundle');
 
 console.log('capabilities.verify: ok');

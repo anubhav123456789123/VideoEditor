@@ -21,16 +21,16 @@ function caps(supportsImages: boolean): ModelCapabilities {
 
 function choice(supportsImages: boolean): AgentModelChoice {
   return {
-    id: 'api:test/deepseek',
+    id: 'api:test/claude-text',
     backend: 'api',
-    provider: 'deepseek',
-    providerLabel: 'DeepSeek',
-    model: 'deepseek-v4-pro',
+    provider: 'anthropic',
+    providerLabel: 'Claude',
+    model: 'claude-text-only',
     capabilities: caps(supportsImages),
   };
 }
 
-const CUSTOM: VisionModelConfig = { mode: 'custom', provider: 'gemini', model: 'gemini-2.0-flash', openAiApiMode: null };
+const CUSTOM: VisionModelConfig = { mode: 'custom', provider: 'anthropic', model: 'claude-haiku-5-5' };
 
 // ── resolveVisionModel ───────────────────────────────────────────────────────
 
@@ -38,10 +38,10 @@ assert.equal(resolveVisionModel(choice(true), CUSTOM), null, 'main model with vi
 assert.equal(resolveVisionModel(choice(false), { mode: 'follow' }), null, 'follow keeps legacy strip behavior');
 assert.equal(resolveVisionModel(choice(false), { mode: 'disabled' }), null, 'disabled never bypasses');
 assert.deepEqual(resolveVisionModel(choice(false), CUSTOM), {
-  provider: 'gemini', model: 'gemini-2.0-flash', openAiApiMode: 'chat',
+  provider: 'anthropic', model: 'claude-haiku-5-5',
 }, 'custom + text-only main model resolves a vision ref');
-assert.equal(resolveVisionModel(choice(false), { mode: 'custom', provider: 'gemini' }), null, 'missing model rejects');
-assert.equal(resolveVisionModel(choice(false), { mode: 'custom', model: 'gemini-2.0-flash' }), null, 'missing provider rejects');
+assert.equal(resolveVisionModel(choice(false), { mode: 'custom', provider: 'anthropic' }), null, 'missing model rejects');
+assert.equal(resolveVisionModel(choice(false), { mode: 'custom', model: 'claude-haiku-5-5' }), null, 'missing provider rejects');
 assert.equal(resolveVisionModel(undefined, CUSTOM), null, 'no active choice never bypasses');
 
 // ── maybeDescribeFramesResult short-circuits (no LLM calls) ─────────────────

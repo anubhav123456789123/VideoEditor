@@ -3,7 +3,7 @@
 // the catalog parsing, the per-engine predicate, the browser precheck, and what
 // the settings list shows each kind of client.
 import assert from 'node:assert/strict';
-import { TranscriptionError } from './assemblyai';
+import { TranscriptionError } from './transcription-source';
 import {
   asrEngineReady, assertBrowserAsrReady, fetchLocalAsrCatalog, fetchLocalAsrModelStatus,
   type LocalAsrModelStatus,

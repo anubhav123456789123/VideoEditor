@@ -50,8 +50,8 @@ const PERSISTENT_LOCAL_TOOLS = new Set([
   'create_project', 'duplicate_project', 'delete_project', 'restore_project',
 ]);
 const IRREVERSIBLE_EXTERNAL_TOOLS = new Set([
-  // paid / long-running / non-idempotent retry surface: generation, export,
-  // reruns, paid web scraping, and the paid sandbox. Failed invocations must
+  // paid / long-running / non-idempotent retry surface: rendering, export,
+  // paid web scraping, and the paid sandbox. Failed invocations must
   // not be replayed automatically.
   'run_code', 'web_crawl', 'web_browser', 'web_search', 'web_map', 'web_batch_scrape',
   'submit_render_job', 'submit_export', 'export_timeline', 'export_motion_graphic_prores',
@@ -59,12 +59,8 @@ const IRREVERSIBLE_EXTERNAL_TOOLS = new Set([
   'publish_to_social',
   'convert_motion_graphic_to_video',
   'transcribe_track',
-  'submit_image', 'submit_video', 'submit_music', 'submit_sound', 'submit_voice',
   'submit_motion_graphic', 'create_motion_graphic', 'create_motion_graphic_from_code',
-  'submit_shader', 'rerun_generation',
-  'submit_image_generation', 'submit_video_generation', 'submit_music_generation',
-  'submit_sound_generation', 'submit_voice_generation',
-  'generate_image', 'generate_video', 'generate_music', 'generate_voice', 'generate_sound',
+  'submit_shader',
 ]);
 const ajv = new Ajv({ allErrors: true, strict: false, allowUnionTypes: true });
 addFormats(ajv);

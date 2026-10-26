@@ -1,5 +1,5 @@
 // checks:key-probes pure logic - detection table coverage, override whitelist, status classification,
-// MiniMax base_resp post-check, runProbe does not hit the network early exit. There are no real network requests in the whole process.
+// runProbe does not hit the network early exit. There are no real network requests in the whole process.
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -18,21 +18,14 @@ delete process.env.OPENCHATCUT_DATA_DIR;
 process.on('exit', () => rmSync(fixtureHome, { recursive: true, force: true }));
 
 const {
-  PROBES, classifyStatus, makeGetter, minimaxPostCheck, networkMessage, runProbe, runProxyProbe,
+  PROBES, classifyStatus, makeGetter, networkMessage, runProbe, runProxyProbe,
 } = await import('./key-probes.ts');
 
 // 1. One-to-one correspondence with the provider page of settingsSchema (the page key has the same name); the llm page is derived from the preset,
 // Synchronize this list when adding other capability pages.
 const EXPECTED_PAGES = [
   ...LLM_PROVIDER_PRESETS.map((preset) => `llm/${preset.id}`),
-  'image/openai', 'image/gemini', 'image/minimax', 'image/wavespeed', 'image/byteplus', 'image/xai',
-  'voice/elevenlabs', 'voice/openai', 'voice/gemini', 'voice/mistral', 'voice/cartesia',
-  'voice/doubao', 'voice/minimax', 'voice/inworld', 'voice/fishaudio', 'voice/speechify',
-  'video/seedance', 'video/kling', 'video/hailuo', 'video/byteplus', 'video/xai', 'video/ofox',
-  'music/mureka', 'music/minimax', 'music/atlas', 'music/sonilo',
   'stock/pexels', 'stock/pixabay', 'stock/unsplash', 'stock/freesound',
-  'transcription/assemblyai', 'transcription/openai', 'transcription/mistral',
-  'transcription/deepgram', 'transcription/groq', 'transcription/elevenlabs', 'transcription/cartesia',
   'sandbox/e2b',
   'web/firecrawl',
   'publish/upload-post',
@@ -43,10 +36,10 @@ assert.equal(Object.keys(PROBES).length, EXPECTED_PAGES.length, 'PROBES 有清�
 
 // 2. Override whitelist: items outside the whitelist will be discarded, empty values ​​will not be covered, and values ​​will be trimmed.
 {
-  const get = makeGetter({ ELEVENLABS_API_KEY: '  k1  ', NOT_A_KEY: 'x', LLM_API_KEY: '   ' });
-  assert.equal(get('ELEVENLABS_API_KEY'), 'k1');
-  assert.equal(get('LLM_API_KEY'), '');   // Blank override does not take effect; keystore is not seeded and has no value
-  assert.equal(get('MINIMAX_API_KEY'), '');
+  const get = makeGetter({ PEXELS_API_KEY: '  k1  ', NOT_A_KEY: 'x', LLM_ANTHROPIC_API_KEY: '   ' });
+  assert.equal(get('PEXELS_API_KEY'), 'k1');
+  assert.equal(get('LLM_ANTHROPIC_API_KEY'), '');   // Blank override does not take effect; keystore is not seeded and has no value
+  assert.equal(get('PIXABAY_API_KEY'), '');
 }
 
 // 3. Status classification: Authentication / Address / Current Limiting / Others, each has a clear conclusion.
@@ -63,12 +56,6 @@ assert.match(classifyStatus(429, '').message, /限流/);
   assert.ok(classifyStatus(500, 'x'.repeat(500)).message.length < 200, '厂商长报错要截断');
 }
 
-// 4. MiniMax base_resp:0 = success; non-0 means provider-level failure (HTTP 200 is also considered a failure); non-JSON is released.
-assert.equal(minimaxPostCheck(JSON.stringify({ base_resp: { status_code: 0 } })), null);
-assert.match(minimaxPostCheck(JSON.stringify({ base_resp: { status_code: 1004, status_msg: 'invalid api key' } })) ?? '', /1004.*鉴权失败/);
-assert.match(minimaxPostCheck(JSON.stringify({ base_resp: { status_code: 2049 } })) ?? '', /2049/);
-assert.equal(minimaxPostCheck('not json'), null);
-
 // 5. Network layer failure copy: clearly "does not mean Key error", and timeout is worded separately.
 assert.match(networkMessage(new TypeError('fetch failed')), /网络不可达[\s\S]*不代表 Key 错误/);
 assert.match(networkMessage(Object.assign(new Error('The operation was aborted due to timeout'), { name: 'TimeoutError' })), /超时/);
@@ -78,30 +65,12 @@ assert.match(networkMessage(Object.assign(new Error('The operation was aborted d
   const unknown = await runProbe('nope/vendor', {});
   assert.equal(unknown.ok, false);
   assert.match(unknown.message, /暂不支持/);
-  const unconfigured = await runProbe('voice/elevenlabs', {});
+  const unconfigured = await runProbe('stock/pexels', {});
   assert.equal(unconfigured.ok, false);
   assert.match(unconfigured.message, /尚未填写 API Key/);
-  // Doubao needs its API key: empty overrides stay unconfigured
-  const half = await runProbe('voice/doubao', { DOUBAO_TTS_API_KEY: ' ' });
-  assert.match(half.message, /尚未填写 API Key/);
-}
-
-// 6b. Doubao connection test sends the configured speaker verbatim.
-{
-  const originalFetch = globalThis.fetch;
-  let speaker = '';
-  globalThis.fetch = async (_input, init) => {
-    const body = JSON.parse(String(init?.body ?? '{}')) as { references?: Array<{ speaker?: string }> };
-    speaker = body.references?.[0]?.speaker ?? '';
-    return Response.json({ audio: 'AA==' });
-  };
-  try {
-    const result = await runProbe('voice/doubao', { DOUBAO_TTS_API_KEY: 'doubao-key', DOUBAO_TTS_VOICE_ID: 'S_5wulnA7i2' });
-    assert.equal(result.ok, true);
-    assert.equal(speaker, 'S_5wulnA7i2', 'probe uses the saved speaker instead of the built-in sample');
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
+  // Blank overrides stay unconfigured
+  const blank = await runProbe('llm/anthropic', { LLM_ANTHROPIC_API_KEY: ' ' });
+  assert.match(blank.message, /尚未填写 API Key/);
 }
 
 // 7. Proxy page uses its own connectivity semantics rather than provider/API-key language.
@@ -114,90 +83,27 @@ assert.match(networkMessage(Object.assign(new Error('The operation was aborted d
   assert.match(malformed.message, /代理地址格式无效/);
 }
 
-// 7. Media probes normalize Base URLs exactly like the runtime: keep an existing version suffix and add a missing one.
+// 7b. The Claude probe lists models from {base}/models with the Anthropic headers.
 {
   const originalFetch = globalThis.fetch;
-  const urls: string[] = [];
-  globalThis.fetch = async (input) => {
-    urls.push(String(input));
-    return Response.json({ data: [] });
-  };
-  try {
-    await runProbe('voice/openai', { OPENAI_API_KEY: 'test', IMAGE_BASE_URL: 'https://proxy.example/v1/' });
-    await runProbe('voice/gemini', { GEMINI_API_KEY: 'test', GEMINI_BASE_URL: 'https://proxy.example/v1beta' });
-    await runProbe('voice/mistral', { LLM_MISTRAL_API_KEY: 'test', LLM_MISTRAL_BASE_URL: 'https://proxy.example' });
-    assert.deepEqual(urls, [
-      'https://proxy.example/v1/models',
-      'https://proxy.example/v1beta/models?pageSize=1',
-      'https://proxy.example/v1/models',
-    ]);
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
-}
-
-// 7b. Requesty checks the key on /models, then lists the curated /models/managed ids; a rejected key stops there.
-{
-  const originalFetch = globalThis.fetch;
-  const calls: Array<{ url: string; auth: string | null }> = [];
-  let keyStatus = 200;
-  let managedStatus = 200;
+  const calls: Array<{ url: string; key: string | null; version: string | null }> = [];
   globalThis.fetch = async (input, init) => {
-    const url = String(input);
-    calls.push({ url, auth: new Headers(init?.headers).get('authorization') });
-    if (url.endsWith('/models/managed')) {
-      return Response.json({ data: [{ id: 'gpt-5.4-mini' }] }, { status: managedStatus });
-    }
-    return Response.json({ data: [{ id: 'openai/gpt-4o-mini' }] }, { status: keyStatus });
+    const headers = new Headers(init?.headers);
+    calls.push({ url: String(input), key: headers.get('x-api-key'), version: headers.get('anthropic-version') });
+    return Response.json({ data: [{ id: 'claude-sonnet-5-5' }, { id: 'claude-opus-5-5' }] });
   };
   try {
-    const ok = await runProbe('llm/requesty', { LLM_REQUESTY_API_KEY: 'rq-test' });
+    const ok = await runProbe('llm/anthropic', { LLM_ANTHROPIC_API_KEY: 'sk-ant-test' });
     assert.equal(ok.ok, true);
-    assert.deepEqual(ok.models, ['gpt-5.4-mini']);
-    assert.deepEqual(calls, [
-      { url: 'https://router.requesty.ai/v1/models', auth: 'Bearer rq-test' },
-      { url: 'https://router.requesty.ai/v1/models/managed', auth: null },
-    ]);
-    managedStatus = 500;
-    const fallback = await runProbe('llm/requesty', { LLM_REQUESTY_API_KEY: 'rq-test' });
-    assert.deepEqual(fallback.models, ['openai/gpt-4o-mini']);
-    calls.length = 0;
-    keyStatus = 403;
-    const rejected = await runProbe('llm/requesty', { LLM_REQUESTY_API_KEY: 'rq-bad' });
-    assert.equal(rejected.ok, false);
-    assert.equal(calls.length, 1, 'a rejected key never reaches the managed list');
+    assert.deepEqual(ok.models, ['claude-opus-5-5', 'claude-sonnet-5-5']);
+    assert.equal(calls.length, 1);
+    assert.match(calls[0].url, /^https:\/\/api\.anthropic\.com\/v1\/models/);
+    assert.equal(calls[0].key, 'sk-ant-test');
+    assert.equal(calls[0].version, '2023-06-01');
   } finally {
     globalThis.fetch = originalFetch;
   }
 }
-
-// 7c. Cheaper Inference checks the key on /models and lists only the chat (type "text") models.
-{
-  const originalFetch = globalThis.fetch;
-  const calls: Array<{ url: string; auth: string | null }> = [];
-  globalThis.fetch = async (input, init) => {
-    calls.push({ url: String(input), auth: new Headers(init?.headers).get('authorization') });
-    return Response.json({
-      data: [
-        { id: 'gpt-5.4-mini', type: 'text' },
-        { id: 'claude-sonnet-5', type: 'text' },
-        { id: 'image-model', type: 'image' },
-        { id: 'video-model', type: 'video' },
-      ],
-    });
-  };
-  try {
-    const ok = await runProbe('llm/cheaperinference', { LLM_CHEAPERINFERENCE_API_KEY: 'ci_live_test' });
-    assert.equal(ok.ok, true);
-    assert.deepEqual(ok.models, ['claude-sonnet-5', 'gpt-5.4-mini']);
-    assert.deepEqual(calls, [
-      { url: 'https://api.cheaperinference.com/v1/models', auth: 'Bearer ci_live_test' },
-    ]);
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
-}
-
 
 // 8. Local storage directory probe: empty group needs = can be tested if not filled in (not set = default directory); the relative path is configured
 // Level failure (postCheck copy, no HTTP prefix); success copy goes to okText. Neither case touched the plate.

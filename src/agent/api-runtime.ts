@@ -33,7 +33,7 @@ import {
 import { normalizeLlmMessages } from './messages';
 import { loadAgentSettings, type AgentSettings } from './settings/agentSettings';
 import { completeAbortedTurn } from './abortedTurn';
-import { executeOpenChatCutTool, type CodexToolExecution } from './codex/runtime';
+import { executeOpenChatCutTool, type ToolExecution } from './tool-execution';
 import { toolFailureReason, ToolFailureTracker } from './toolFailure';
 import type {
   AgentEvent,
@@ -48,7 +48,7 @@ import {
 } from './api-round';
 
 const MAX_TOOL_TURNS = 30;
-export function apiToolExecutionOutput(execution: CodexToolExecution): unknown {
+export function apiToolExecutionOutput(execution: ToolExecution): unknown {
   if (!execution.success) throw new Error(toolFailureReason(execution.result));
   return execution.result;
 }
@@ -189,14 +189,10 @@ class ApiAgentRunner {
       ...messages,
       tools,
       toolSchemas,
-      providerOptions: getLanguageModelProviderOptions(
-        choice.provider,
-        choice.openAiApiMode,
-        this.settings.cacheMode,
-      ),
+      providerOptions: getLanguageModelProviderOptions(choice.provider, this.settings.cacheMode),
       cacheTtlMs: cacheTtlMsForProvider(choice.provider, this.settings.cacheMode),
       model: dependencies.model
-        ?? await getLanguageModel(choice.provider, choice.model, choice.openAiApiMode),
+        ?? await getLanguageModel(choice.provider, choice.model),
     };
   }
 

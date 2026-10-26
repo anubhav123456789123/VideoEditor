@@ -1,20 +1,16 @@
-import { FAL_MODELS } from '../../shared/fal-models';
 // Which key-gated capabilities are actually configured. The booleans are computed
 // SERVER-SIDE in config/vite.config.ts (from .env.local) and injected via `define` as
 // __CONFIGURED_CAPS__ — BOOLEANS ONLY, never any key value reaches the browser.
 // The system prompt reads this so the agent plans around what's available instead
 // of promising e.g. raw graph and only discovering "not configured" mid-execution.
 
-export type CapabilityKey =
-  | 'image' | 'voice' | 'video' | 'music' | 'sound'
-  | 'stock' | 'transcription' | 'sandbox' | 'web';
+export type CapabilityKey = 'stock' | 'transcription' | 'sandbox' | 'web';
 
 /** Proposal confirmation mode for provider routing: 'manual' asks the user
  * before first use among several providers; 'auto' lets the agent pick. */
 export type ApprovalMode = 'manual' | 'auto';
 
 const ALL_OFF: Record<CapabilityKey, boolean> = {
-  image: false, voice: false, video: false, music: false, sound: false,
   stock: false, transcription: false, sandbox: false, web: false,
 };
 
@@ -58,46 +54,6 @@ export function applyLiveModels(models: Record<string, string>): void {
 // names (mirrors keystore computeCaps). An empty AND-group marks a keyless local provider.
 interface ProviderRow { label: string; arg: string; argKey: 'model' | 'provider'; need: string[][] }
 const CAP_PROVIDERS: Partial<Record<CapabilityKey, ProviderRow[]>> = {
-  image: [
-    { label: 'Fal.ai', arg: 'fal', argKey: 'model', need: [['FAL_KEY']] },
-    { label: 'gpt-image', arg: 'gpt-image-2', argKey: 'model', need: [['IMAGE_API_KEY'], ['OPENAI_API_KEY']] },
-    { label: 'Nano Banana', arg: 'nano-banana', argKey: 'model', need: [['GEMINI_API_KEY']] },
-    { label: 'MiniMax', arg: 'image-01', argKey: 'model', need: [['MINIMAX_API_KEY']] },
-    { label: 'WaveSpeed', arg: 'wavespeed', argKey: 'model', need: [['WAVESPEED_API_KEY']] },
-    { label: 'BytePlus', arg: 'byteplus', argKey: 'model', need: [['BYTEPLUS_API_KEY']] },
-    { label: 'xAI Grok', arg: 'grok-imagine', argKey: 'model', need: [['LLM_XAI_OAUTH_API_KEY'], ['LLM_XAI_API_KEY']] },
-  ],
-  voice: [
-    { label: 'ElevenLabs', arg: 'elevenlabs', argKey: 'provider', need: [['ELEVENLABS_API_KEY']] },
-    { label: 'Doubao', arg: 'doubao', argKey: 'provider', need: [['DOUBAO_TTS_API_KEY']] },
-    { label: 'MiniMax', arg: 'minimax', argKey: 'provider', need: [['MINIMAX_API_KEY']] },
-    { label: 'Inworld', arg: 'inworld', argKey: 'provider', need: [['INWORLD_TTS_API_KEY']] },
-    { label: 'Fish Audio', arg: 'fishaudio', argKey: 'provider', need: [['FISHAUDIO_TTS_API_KEY']] },
-    { label: 'Speechify', arg: 'speechify', argKey: 'provider', need: [['SPEECHIFY_TTS_API_KEY']] },
-    { label: 'OpenAI', arg: 'openai', argKey: 'provider', need: [['OPENAI_API_KEY']] },
-    { label: 'Gemini', arg: 'gemini', argKey: 'provider', need: [['GEMINI_API_KEY']] },
-    { label: 'Mistral Voxtral', arg: 'mistral', argKey: 'provider', need: [['LLM_MISTRAL_API_KEY']] },
-    { label: 'Cartesia', arg: 'cartesia', argKey: 'provider', need: [['CARTESIA_API_KEY']] },
-  ],
-  video: [
-    { label: 'OFox', arg: 'ofox', argKey: 'model', need: [['LLM_OFOX_API_KEY']] },
-    { label: 'Fal.ai', arg: 'fal', argKey: 'model', need: [['FAL_KEY']] },
-    { label: 'Seedance', arg: 'seedance2', argKey: 'model', need: [['SEEDANCE_API_KEY']] },
-    { label: 'Kling', arg: 'kling', argKey: 'model', need: [['KLING_API_KEY']] },
-    { label: 'Hailuo', arg: 'hailuo', argKey: 'model', need: [['MINIMAX_API_KEY']] },
-    { label: 'xAI Grok', arg: 'grok-imagine-video', argKey: 'model', need: [['LLM_XAI_OAUTH_API_KEY'], ['LLM_XAI_API_KEY']] },
-    { label: 'BytePlus', arg: 'byteplus', argKey: 'model', need: [['BYTEPLUS_API_KEY']] },
-  ],
-  music: [
-    { label: 'Mureka', arg: 'mureka', argKey: 'provider', need: [['MUREKA_API_KEY']] },
-    { label: 'MiniMax', arg: 'minimax', argKey: 'provider', need: [['MINIMAX_API_KEY']] },
-    { label: 'Atlas Cloud', arg: 'atlas', argKey: 'provider', need: [['ATLASCLOUD_API_KEY']] },
-    { label: 'Sonilo', arg: 'sonilo', argKey: 'provider', need: [['SONILO_API_KEY']] },
-  ],
-  sound: [
-    { label: 'ElevenLabs', arg: 'elevenlabs', argKey: 'provider', need: [['ELEVENLABS_API_KEY']] },
-    { label: 'Sonilo', arg: 'sonilo', argKey: 'provider', need: [['SONILO_API_KEY']] },
-  ],
   stock: [
     { label: 'Pexels', arg: 'pexels', argKey: 'provider', need: [['PEXELS_API_KEY']] },
     { label: 'Pixabay', arg: 'pixabay', argKey: 'provider', need: [['PIXABAY_API_KEY']] },
@@ -105,45 +61,15 @@ const CAP_PROVIDERS: Partial<Record<CapabilityKey, ProviderRow[]>> = {
     { label: 'Freesound', arg: 'freesound', argKey: 'provider', need: [['FREESOUND_API_KEY']] },
   ],
   transcription: [
-    { label: 'AssemblyAI', arg: 'assemblyai', argKey: 'provider', need: [['ASSEMBLYAI_API_KEY']] },
     { label: 'Local Whisper', arg: 'local', argKey: 'provider', need: [[]] },
-    { label: 'OpenAI', arg: 'openai', argKey: 'provider', need: [['OPENAI_API_KEY']] },
-    { label: 'Mistral Voxtral', arg: 'mistral', argKey: 'provider', need: [['LLM_MISTRAL_API_KEY']] },
-    { label: 'Deepgram', arg: 'deepgram', argKey: 'provider', need: [['DEEPGRAM_API_KEY']] },
-    { label: 'Groq', arg: 'groq', argKey: 'provider', need: [['GROQ_API_KEY']] },
-    { label: 'ElevenLabs Scribe', arg: 'elevenlabs', argKey: 'provider', need: [['ELEVENLABS_API_KEY']] },
-    { label: 'Cartesia', arg: 'cartesia', argKey: 'provider', need: [['CARTESIA_API_KEY']] },
   ],
 };
 
 const PREFERRED_KEY: Partial<Record<CapabilityKey, string>> = {
-  image: 'PREFERRED_IMAGE_VENDOR',
-  voice: 'PREFERRED_VOICE_VENDOR',
-  video: 'PREFERRED_VIDEO_VENDOR',
-  music: 'PREFERRED_MUSIC_VENDOR',
   transcription: 'PREFERRED_TRANSCRIPTION_PROVIDER',
 };
 
 const rowTag = (r: ProviderRow): string => `${r.label}(${r.argKey}=${r.arg})`;
-
-function falModelSuffix(cap: CapabilityKey): string {
-  if ((cap !== 'image' && cap !== 'video') || !liveKeys?.FAL_KEY?.configured) return '';
-  const models = FAL_MODELS.filter((model) => model.kind === cap);
-  const preferred = liveModels?.[cap === 'image' ? 'FAL_IMAGE_MODEL' : 'FAL_VIDEO_MODEL'];
-  const selected = models.find((model) => model.id === preferred);
-  return `\nFal ${cap} models (use model=fal and falModel=<id>): ${models.map((model) => `${model.label}=${model.id}`).join(', ')}. `
-    + (selected ? `Saved Fal default: ${selected.id}; honor it unless the user explicitly requests another model.`
-      : 'No Fal model selected: ask which model to use before submitting; do not silently default to Seedance.')
-    + ' Only the documented common inputs are supported; use the selected model constraints in the tool schema.';
-}
-
-function doubaoSpeakerSuffix(): string {
-  if (!liveKeys?.DOUBAO_TTS_API_KEY?.configured) return '';
-  const speaker = (liveModels?.DOUBAO_TTS_VOICE_ID ?? '').trim();
-  return speaker
-    ? `\nDoubao default speaker ID: ${speaker}. For provider=doubao pass it verbatim as voiceId unless the user explicitly names another voice; no audition is needed.`
-    : '';
-}
 
 /** Routing suffix for an ON capability, mode-aware:
  * user default → use it; single vendor → use it;
@@ -157,7 +83,7 @@ function providerSuffix(cap: CapabilityKey, mode: ApprovalMode): string {
   if (on.length === 0) return '';
   const prefKey = PREFERRED_KEY[cap];
   const savedPref = prefKey ? (liveModels?.[prefKey] ?? '').trim() : '';
-  const pref = savedPref || (cap === 'transcription' ? 'assemblyai' : '');
+  const pref = savedPref || (cap === 'transcription' ? 'local' : '');
   const chosen = pref ? on.find((r) => r.arg === pref) : undefined;
   if (chosen) {
     const source = savedPref ? 'user default' : 'default';
@@ -172,11 +98,6 @@ function providerSuffix(cap: CapabilityKey, mode: ApprovalMode): string {
 
 // label + the primary tool + a fallback hint when the capability is off.
 const CAP_ROWS: { key: CapabilityKey; label: string; tool: string; fallback: string }[] = [
-  { key: 'image', label: 'Image generation', tool: 'submit_image', fallback: 'use push_asset/import_url_asset for a public image, or ask the user to upload/paste one' },
-  { key: 'voice', label: 'Voice/TTS', tool: 'submit_voice', fallback: 'ask the user to provide and upload/paste audio' },
-  { key: 'video', label: 'Video generation', tool: 'submit_video', fallback: 'use push_asset for a public video, or ask the user to upload one' },
-  { key: 'music', label: 'Music generation', tool: 'submit_music', fallback: 'use list_audio/add_audio from the library, or ask the user to upload audio' },
-  { key: 'sound', label: 'Sound generation', tool: 'submit_sound', fallback: 'use list_audio/add_audio from the sound-effects library' },
   { key: 'stock', label: 'Stock-media search', tool: 'search_stock_media', fallback: 'use push_asset to import a known public URL directly' },
   { key: 'transcription', label: 'Transcription/talking-head editing', tool: 'transcribe_track', fallback: 'word-level deletion, filler cleanup, and automatic captions are unavailable' },
   { key: 'sandbox', label: 'Sandbox execution (ffmpeg/node/python)', tool: 'run_code', fallback: 'skip run_code steps; probe_media does not need the sandbox and stays available' },
@@ -199,7 +120,7 @@ export function capabilitiesPrompt(
   }
   return `\n\n# Available capabilities (based on configured API keys; local editing is always available without keys)\n`
     + `✅ Configured: ${on.length ? on.join(', ') : '(no key-gated capabilities)'}.\n`
-    + falModelSuffix('image') + falModelSuffix('video') + doubaoSpeakerSuffix() + '\n'
+    + '\n'
     + `⬜ Not configured — do not promise these in a plan or call them; they return "not configured" and waste a turn:\n`
     + (off.length ? off.map((s) => `  - ${s}`).join('\n') : '  (none)')
     + '\nWhen an unavailable capability is needed, follow its fallback above or tell the user that the capability is not configured'

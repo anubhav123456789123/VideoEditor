@@ -9,7 +9,6 @@ const expectedCreativeSlugs = [
   'livestream-to-clips',
   'long-video-to-shorts',
   'multi-clips-to-reels',
-  'ai-cinematic-short-film',
   'product-ad-video-script',
   'explainer-video',
   'motion-graphic-placement',
@@ -46,7 +45,7 @@ try {
     normalizeStoredCustomSkill: (value: unknown) => CustomSkill | undefined;
   };
 
-  assert.equal(pluginFiles.PLUGIN_SKILLS.length, 30);
+  assert.equal(pluginFiles.PLUGIN_SKILLS.length, 25);
   assert.deepEqual(catalog.CREATIVE_SKILLS.map((skill) => skill.slug), expectedCreativeSlugs);
   for (const skill of pluginFiles.PLUGIN_SKILLS) {
     for (const match of skill.body.matchAll(/\]\((?:\.\/)?([^)\s#?]+\.md)(?:[?#][^)]*)?\)/g)) {

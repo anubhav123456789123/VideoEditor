@@ -5,7 +5,7 @@ import type {
   ToolResultPart,
   UserContent,
 } from 'ai';
-import type { LlmProvider, OpenAiApiMode } from './providerConfig';
+import type { LlmProvider } from './providerConfig';
 
 type UnknownRecord = Record<string, unknown>;
 type UserContentParts = Exclude<UserContent, string>;
@@ -310,10 +310,7 @@ export function withoutModelImages(messages: readonly ModelMessage[]): ModelMess
   });
 }
 
-export function makeMessagesPortable(
-  messages: readonly ModelMessage[],
-  openAiApiMode?: OpenAiApiMode,
-): ModelMessage[] {
+export function makeMessagesPortable(messages: readonly ModelMessage[]): ModelMessage[] {
   const portable = messages.flatMap((message): ModelMessage[] => {
     if (message.role === 'system') return [{ role: 'system', content: message.content }];
     if (message.role === 'user') {
@@ -349,9 +346,7 @@ export function makeMessagesPortable(
       }),
     }];
   });
-  return openAiApiMode === 'chat'
-    ? prepareChatCompletionsMediaMessages(portable).messages
-    : portable;
+  return portable;
 }
 
 export function prepareMessagesForProvider(

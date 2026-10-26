@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import type { ModelMessage } from 'ai';
 import type { AgentToolSchema } from './tool-schema';
 import { activationProviderOptions, ToolActivation } from './tool-activation';
-import { normalizeLlmMessages, prepareMessagesForProvider } from './messages';
+import { makeMessagesPortable, normalizeLlmMessages } from './messages';
 import { TOOL_SCHEMAS } from './tools';
 import { execCoreTool } from './tools/core-tools';
 
@@ -25,7 +25,6 @@ const catalog = [
   schema('verify_export'),
   schema('web_crawl'),
   schema('list_audio'),
-  schema('submit_voice'),
   schema('transcribe_track'),
   schema('search_stock_media'),
   schema('music_edit_plan'),
@@ -43,20 +42,10 @@ assert.deepEqual(neutral.names(), [
 ]);
 
 for (const prompt of [
-  'Use OpenAI TTS with my selected voice.',
-  'Use Gemini TTS with my selected voice.',
-  'Use Mistral TTS with my selected voice.',
-  'Use Cartesia TTS with my selected voice.',
-]) {
-  const activation = new ToolActivation(catalog, [{ role: 'user', content: prompt }]);
-  assert.ok(activation.names().includes('submit_voice'), `${prompt} exposes submit_voice`);
-}
-
-for (const prompt of [
-  'Use Deepgram transcription for this track.',
-  'Use Groq ASR for this track.',
-  'Use ElevenLabs speech-to-text for this track.',
-  'Use Cartesia transcription for this track.',
+  'Transcribe this track.',
+  'Run ASR on this track.',
+  'Speech-to-text for this track, please.',
+  'Use Whisper for this track.',
 ]) {
   const activation = new ToolActivation(catalog, [{ role: 'user', content: prompt }]);
   assert.ok(activation.names().includes('transcribe_track'), `${prompt} exposes transcribe_track`);
@@ -69,7 +58,7 @@ const providerOnly = new ToolActivation(catalog, [{
 assert.deepEqual(
   providerOnly.names(),
   neutral.names(),
-  'bare provider names do not activate speech tools without TTS/transcription intent',
+  'bare provider names do not activate speech tools without transcription intent',
 );
 
 const routed = new ToolActivation(catalog, [{ role: 'user', content: '把 V1 轨道片段移动并剪辑一下' }]);
@@ -349,7 +338,7 @@ assert.deepEqual(
   neutralSearch.activation.names(),
   'Codex continuation restores the exact activated schema order',
 );
-const portableActivation = prepareMessagesForProvider([{
+const portableActivation = makeMessagesPortable([{
   role: 'assistant',
   content: [{
     type: 'text',
@@ -359,7 +348,7 @@ const portableActivation = prepareMessagesForProvider([{
       openchatcut: { activatedTools: ['web_crawl'] },
     },
   }],
-}], 'anthropic', 'openai');
+}]);
 assert.deepEqual(portableActivation, [{
   role: 'assistant',
   content: [{
@@ -367,7 +356,7 @@ assert.deepEqual(portableActivation, [{
     text: 'ToolSearch checkpoint.',
     providerOptions: { openchatcut: { activatedTools: ['web_crawl'] } },
   }],
-}], 'provider switches retain only portable OpenChatCut activation metadata');
+}], 'portable replays retain only OpenChatCut activation metadata');
 assert.deepEqual(
   normalizeLlmMessages(portableActivation),
   portableActivation,

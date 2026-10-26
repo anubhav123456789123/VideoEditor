@@ -22,27 +22,23 @@ const storage = new FakeStorage();
 const { autoTranscribeIngestSetting, shouldAutoTranscribeIngest, setAutoTranscribeIngest, AUTO_TRANSCRIBE_INGEST_KEY } =
   await import('./provider');
 
-// Default: local engine auto-transcribes, cloud does not.
+// Default: the local engine auto-transcribes.
 storage.removeItem(AUTO_TRANSCRIBE_INGEST_KEY);
 assert.equal(autoTranscribeIngestSetting(), 'local', 'default is local');
 assert.equal(shouldAutoTranscribeIngest('local'), true, 'local engine auto by default');
-assert.equal(shouldAutoTranscribeIngest('assemblyai'), false, 'cloud never auto by default');
 
 // off: nothing auto-transcribes.
 setAutoTranscribeIngest('off');
 assert.equal(autoTranscribeIngestSetting(), 'off');
 assert.equal(shouldAutoTranscribeIngest('local'), false, 'off blocks local');
-assert.equal(shouldAutoTranscribeIngest('assemblyai'), false, 'off blocks cloud');
 
-// all: everything auto-transcribes.
+// all: the local engine auto-transcribes.
 setAutoTranscribeIngest('all');
 assert.equal(shouldAutoTranscribeIngest('local'), true);
-assert.equal(shouldAutoTranscribeIngest('assemblyai'), true);
 
-// local: only the local engine.
+// local: the local engine auto-transcribes.
 setAutoTranscribeIngest('local');
 assert.equal(shouldAutoTranscribeIngest('local'), true);
-assert.equal(shouldAutoTranscribeIngest('assemblyai'), false);
 
 // Garbage values degrade to the default instead of crashing.
 storage.setItem(AUTO_TRANSCRIBE_INGEST_KEY, 'garbage');

@@ -3,7 +3,7 @@ import { ASR_MODELS } from '../../../shared/asr-models';
 import { EN } from '../../i18n/dict/en';
 import { IT } from '../../i18n/dict/it';
 import { RU } from '../../i18n/dict/ru';
-import { localAsrPage, TRANSCRIPTION_SETTINGS_GROUP } from './settingsMediaProviders';
+import { localAsrPage } from './settingsMediaProviders';
 
 function transcriptionLanguageOptions(pageFields: readonly { name: string; options?: readonly { value: string; label: string }[] }[]) {
   const field = pageFields.find((candidate) => candidate.name === 'TRANSCRIPTION_LANGUAGE');
@@ -11,7 +11,7 @@ function transcriptionLanguageOptions(pageFields: readonly { name: string; optio
   return field.options ?? [];
 }
 
-for (const page of TRANSCRIPTION_SETTINGS_GROUP.vendors) {
+for (const page of [localAsrPage]) {
   const options = transcriptionLanguageOptions(page.fields);
   for (const language of ['it', 'ru', 'pt']) {
     assert.ok(

@@ -1,7 +1,9 @@
+// Windows-safe child-process command: .cmd/.bat shims run through cmd.exe with
+// verbatim, escaped arguments; every other platform spawns the executable directly.
 const CMD_META_PATTERN = /([()\][%!^"`<>&|;, *?])/g;
 const NODE_CMD_SHIM_PATTERN = /node_modules[\\/]\.bin[\\/][^\\/]+\.cmd$/i;
 
-export interface CodexCommand {
+export interface ProcessCommand {
   readonly executable: string;
   readonly args: readonly string[];
   readonly windowsVerbatimArguments?: boolean;
@@ -19,11 +21,11 @@ function escapeCmdArgument(value: string, doubleEscapeMeta: boolean): string {
   return doubleEscapeMeta ? escaped.replace(CMD_META_PATTERN, '^$1') : escaped;
 }
 
-export function codexCommand(
+export function processCommand(
   executable: string,
   args: readonly string[],
   platform: NodeJS.Platform = process.platform,
-): CodexCommand {
+): ProcessCommand {
   if (platform !== 'win32' || !/\.(?:cmd|bat)$/i.test(executable)) {
     return { executable, args };
   }

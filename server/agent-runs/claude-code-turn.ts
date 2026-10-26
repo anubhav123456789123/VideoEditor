@@ -9,7 +9,7 @@ import {
 import { summarizeConversation } from '../../src/agent/context-summary';
 import { compactToolResultForModel } from '../../src/agent/tool-result-compaction';
 import type { AgentToolSchema } from '../../src/agent/tool-schema';
-import { codexToolHistoryEntry } from '../../src/agent/codex/tool-history';
+import { toolHistoryEntry } from '../../src/agent/tool-history';
 import type { AgentContextUsage } from '../../src/agent/context-compaction';
 import {
   persistServerCheckpoint,
@@ -149,7 +149,7 @@ export interface ServerClaudeCodeTurnDeps {
 /**
  * Run one Agent turn through the server-side Claude Code executor.
  *
- * Unlike Codex, Claude Code CLI's own MCP client calls OpenChatCut's MCP
+ * Claude Code CLI's own MCP client calls OpenChatCut's MCP
  * server directly and executes tools itself (the CLI is launched with
  * --mcp-config pointing at this instance's own /api/external-mcp/mcp and
  * --allowedTools "mcp__openchatcut-builtin__*"). There is no tool-execution bridge
@@ -159,7 +159,7 @@ export interface ServerClaudeCodeTurnDeps {
  * KNOWN LIMITATION (documented, not silently glossed over): because tool
  * calls bypass `executeBrowserTool`, they are not gated by this run's
  * ToolActivation (the CLI is given a blanket "mcp__openchatcut-builtin__*" allow
- * list, not the same turn-by-turn activated subset the API/Codex paths
+ * list, not the same turn-by-turn activated subset the API path
  * enforce), and any proposal/undo-batch bookkeeping that only lives inside
  * `executeBrowserTool` does not apply to these calls either — the display
  * events pushed below give the UI equivalent visibility, but the calls are
@@ -237,7 +237,7 @@ export async function executeServerClaudeCodeTurn(
       case 'tool-end': {
         const args = pendingArgs.get(event.callId) ?? event.args;
         pendingArgs.delete(event.callId);
-        toolHistory.push(codexToolHistoryEntry(
+        toolHistory.push(toolHistoryEntry(
           { name: event.name, args },
           { success: event.success, result: event.result },
         ));

@@ -1,6 +1,4 @@
 import assert from 'node:assert/strict';
-import type { AgentContext } from '../agent/context';
-import { executeGenerateCommand } from '../agent/tools/generate-tool-handlers';
 import {
   acknowledgeIngestedGenerationResults,
   applyGenerationJobReports,
@@ -128,31 +126,12 @@ if (!ambiguous.ok) {
 }
 
 await registerTrackedJob({
-  operationId: 'legacy-summary-only',
-  jobId: 'legacy-summary-only',
-  projectId,
-  status: 'failed',
-  params: { prompt: 'not a complete request' },
-});
-const context = {
-  getProjectId: () => projectId,
-  getState: () => ({}) as never,
-  getDoc: () => ({}) as never,
-  getCreativeMode: () => null,
-  commands: {} as never,
-  templates: [],
-  audio: [],
-} as AgentContext;
-const legacyResult = await executeGenerateCommand('rerun_generation', { jobId: 'legacy-summary-only' }, context) as { code?: string };
-assert.equal(legacyResult.code, 'legacy_summary', 'summary-only legacy rows must never be guessed into a provider request');
-
-await registerTrackedJob({
   operationId: 'preflight-in-flight',
   jobId: 'preflight-in-flight',
   projectId,
   status: 'submitting',
-  toolName: 'submit_video',
-  submitArgs: { model: 'kling', prompt: 'materializing source slice' },
+  toolName: 'submit_export',
+  submitArgs: { format: 'mp4' },
 });
 await applyGenerationJobReports(projectId, [{
   operationId: 'preflight-in-flight',

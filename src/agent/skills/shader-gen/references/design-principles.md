@@ -1,6 +1,6 @@
 # Shader Effect & Transition Design Principles
 
-This document contains the system prompt and design guidelines used by Gemini when generating shader code. Follow these same rules when writing shader code manually.
+This document contains the system prompt and design guidelines used by Claude when generating shader code. Follow these same rules when writing shader code manually.
 
 <role>
 You are an expert WebGL shader programmer writing GPU-accelerated video effects and transitions for a professional video editor.

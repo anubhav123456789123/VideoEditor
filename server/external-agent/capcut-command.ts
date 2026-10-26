@@ -9,7 +9,7 @@
 // always does on Windows, through cmd.exe with npm's own argument escaping.)
 import { statSync } from 'node:fs';
 import { win32 } from 'node:path';
-import { codexCommand, type CodexCommand } from '../codex/command.ts';
+import { processCommand, type ProcessCommand } from '../process-command.ts';
 
 /**
  * Without a version, `npx --yes` fetches and runs whatever capcut-cli release
@@ -27,7 +27,7 @@ export interface CapcutHost {
   isFile?: (path: string) => boolean;
 }
 
-export type CapcutLaunch = CodexCommand;
+export type CapcutLaunch = ProcessCommand;
 
 function isFile(path: string): boolean {
   try {
@@ -82,7 +82,7 @@ export function capcutCommand(executable = process.env.CAPCUT_CLI || CAPCUT_CLI_
  */
 export function capcutLaunch(args: readonly string[], executable?: string, host: CapcutHost = {}): CapcutLaunch {
   const [command, ...prefix] = capcutCommand(executable, host);
-  const launch = codexCommand(command!, [...prefix, ...args], host.platform ?? process.platform);
+  const launch = processCommand(command!, [...prefix, ...args], host.platform ?? process.platform);
   if (launch.windowsVerbatimArguments && args.some((arg) => /["\r\n]/.test(arg))) {
     throw new Error('capcut-cli: a .cmd/.bat CAPCUT_CLI cannot take an argument with a quote or line break');
   }

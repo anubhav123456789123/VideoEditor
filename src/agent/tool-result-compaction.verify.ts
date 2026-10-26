@@ -3,7 +3,7 @@ import {
   compactToolResultForModel,
   compactToolResultForTransport,
 } from './tool-result-compaction';
-import { codexToolHistoryEntry } from './codex/tool-history';
+import { toolHistoryEntry } from './tool-history';
 
 
 const small = { ok: true, items: [{ id: 'a' }] };
@@ -43,7 +43,7 @@ const imageResult = compactToolResultForTransport({
 }, true) as { __images: Array<{ base64: string }> };
 assert.equal(imageResult.__images[0]?.base64, base64, 'Codex image bytes must remain unchanged');
 const exactSkillPage = '中文🙂'.repeat(8_000);
-const skillHistory = codexToolHistoryEntry(
+const skillHistory = toolHistoryEntry(
   { name: 'load_skill', args: { name: 'fixture' } },
   { success: true, result: { contents: { 'SKILL.md': exactSkillPage }, nextOffset: 32_000 } },
 );

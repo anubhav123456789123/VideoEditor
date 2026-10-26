@@ -19,7 +19,7 @@ function escapeCmdArgument(value: string, doubleEscapeMeta: boolean): string {
   return doubleEscapeMeta ? escaped.replace(CMD_META_PATTERN, '^$1') : escaped;
 }
 
-/** Windows-safe spawn command builder — identical escaping strategy to server/codex/command.ts. */
+/** Windows-safe spawn command builder — identical escaping strategy to server/process-command.ts. */
 export function claudeCodeCommand(
   executable: string,
   args: readonly string[],

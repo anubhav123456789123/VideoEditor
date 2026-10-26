@@ -1,4 +1,3 @@
-import { FAL_MODELS } from '../../../shared/fal-models';
 // Set the information architecture of the panel (first-level classification → second-level capability group → third-level provider page → fields) and pure display logic.
 // Three columns: Left tree = Category → Capability; Middle column = Vendor list under this capability; Right column = Configuration page of the selected vendor.
 // Agent LLM saves independent API URLs, API Keys and models for each vendor; the capability to generate classes can be additionally provided
@@ -6,19 +5,9 @@ import { FAL_MODELS } from '../../../shared/fal-models';
 // Security invariant: the secret field only has a Boolean status, and the value will never be backfilled; the model/routing field is a non-secret configuration,
 // The current value is echoed through the models channel of GET /api/keys (server-side NON_SECRET_NAMES whitelist).
 import { t } from '../../i18n/locale';
-import {
-  isLocalLlmProvider,
-  llmProviderConfigNames,
-} from '../../../shared/llm-providers';
-import type { CodexAgentStatus } from '../../../shared/codex-agent';
-import type { CopilotAgentStatus } from '../../../shared/copilot-agent';
 import type { ClaudeCodeAgentStatus } from '../../../shared/claude-code-agent';
-import type { VendorId } from './vendorIcons';
 import {
   directory,
-  modelPicker,
-  modelText,
-  routeSelect,
   secret,
   text,
   type KeyStatusResponse,
@@ -28,14 +17,8 @@ import {
   type SettingsGroup,
   type SettingsVendorPage,
 } from './settingsFields';
-import {
-  LOCAL_ASR_SETTINGS_ROUTE,
-  ROUTE_NEEDS,
-  TRANSCRIPTION_SETTINGS_GROUP,
-  VOICE_SETTINGS_GROUP,
-  localAsrPage,
-} from './settingsMediaProviders';
-import { AGENT_VENDOR_PAGES_WITH_VISION, PROXY_PAGE } from './settingsAgentProviders';
+import { LOCAL_ASR_SETTINGS_ROUTE, ROUTE_NEEDS, TRANSCRIPTION_SETTINGS_GROUP, localAsrPage } from './settingsMediaProviders';
+import { AGENT_VENDOR_PAGES, PROXY_PAGE } from './settingsAgentProviders';
 
 export type {
   FieldKind,
@@ -48,167 +31,19 @@ export type {
   SettingsVendorPage,
 } from './settingsFields';
 
-const MINIMAX_NOTE = 'MiniMax 同一个 Key，配置一次全能力（生图 / 配音 / 视频 / 音乐）通用。';
-const minimaxPage = (cap: string, modelField: SettingsField, title = 'MiniMax', vendor: VendorId = 'minimax'): SettingsVendorPage => ({
-  key: `${cap}/${vendor}`, vendor, title, note: MINIMAX_NOTE,
-  fields: [
-    secret('MINIMAX_API_KEY', 'API Key'),
-    text('MINIMAX_BASE_URL', 'Base URL', '默认 https://api.minimaxi.com'),
-    modelField,
-  ],
-});
-
-// BytePlus ModelArk serves image (Seedream) and video (Seedance) from the same Key/Base URL,
-// separate from LLM_BYTEPLUS_* (Agent chat) — same sharing convention as MiniMax above.
-const BYTEPLUS_NOTE = 'BytePlus ModelArk 同一个 Key，图生 / 视频生成通用；与「Agent 大脑」的 BytePlus 配置各自独立。';
-const byteplusPage = (cap: string, modelField: SettingsField, title = 'BytePlus · ModelArk'): SettingsVendorPage => ({
-  key: `${cap}/byteplus`, vendor: 'byteplus', title, note: BYTEPLUS_NOTE,
-  fields: [
-    secret('BYTEPLUS_API_KEY', 'API Key'),
-    text('BYTEPLUS_BASE_URL', 'Base URL', '默认 https://ark.ap-southeast.bytepluses.com/api/v3'),
-    modelField,
-  ],
-});
-
-const falPage = (cap: 'image' | 'video'): SettingsVendorPage => ({
-  key: `${cap}/fal`, vendor: 'fal', title: 'Fal.ai',
-  note: '选择 Fal.ai 作为默认厂商，然后选择模型。聊天中指定的模型优先于此默认值。',
-  fields: [
-    secret('FAL_KEY', 'API Key'),
-    {
-      name: cap === 'image' ? 'FAL_IMAGE_MODEL' : 'FAL_VIDEO_MODEL',
-      label: cap === 'image' ? '生图模型' : '视频模型', kind: 'select',
-      options: [
-        { value: '', label: '每次询问（默认）' },
-        ...FAL_MODELS.filter((model) => model.kind === cap).map(({ id, label }) => ({ value: id, label })),
-      ],
-    },
-  ],
-});
-
 export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
   {
     key: 'agent', title: 'Agent 模型', icon: 'sparkles',
     groups: [
-      { key: 'llm', title: 'Agent 大脑',
+      { key: 'llm', title: 'Claude',
         hint: '对话与工具调用的核心，未配置无法对话。',
-        vendors: AGENT_VENDOR_PAGES_WITH_VISION },
+        vendors: AGENT_VENDOR_PAGES },
     ],
   },
   {
     key: 'proxy', title: '网络代理', icon: 'plug',
     groups: [
       { key: 'proxy', title: '网络代理', hint: '统一配置服务端访问海外 API 使用的代理地址。', vendors: [PROXY_PAGE] },
-    ],
-  },
-  {
-    key: 'generation', title: 'AI 生成', icon: 'image',
-    groups: [
-      { key: 'image', title: '生图', hint: 'submit_image · 文生图 / 图生图，任一厂商即可。',
-        route: routeSelect('PREFERRED_IMAGE_VENDOR', [
-          { value: 'fal', label: 'Fal.ai' },
-          { value: 'gpt-image-2', label: 'OpenAI gpt-image' },
-          { value: 'nano-banana', label: 'Gemini Nano Banana' },
-          { value: 'image-01', label: 'MiniMax' },
-          { value: 'wavespeed', label: 'WaveSpeed' },
-          { value: 'byteplus', label: 'BytePlus · Seedream' },
-          { value: 'grok-imagine', label: 'xAI Grok Imagine' },
-        ]),
-        vendors: [
-          { key: 'image/openai', vendor: 'openai', title: 'OpenAI', fields: [
-            secret('IMAGE_API_KEY', 'API Key（gpt-image）'),
-            text('IMAGE_BASE_URL', 'Base URL', '默认 https://api.openai.com'),
-          ] },
-          { key: 'image/gemini', vendor: 'gemini', title: 'Google Gemini', fields: [
-            secret('GEMINI_API_KEY', 'API Key（Nano Banana）'),
-            text('GEMINI_BASE_URL', 'Base URL', '默认 https://generativelanguage.googleapis.com'),
-            modelText('GEMINI_IMAGE_MODEL', '生图模型', 'gemini-3.1-flash-image'),
-          ] },
-          falPage('image'),
-          minimaxPage('image', modelPicker('MINIMAX_IMAGE_MODEL', '生图模型', 'image-01', ['image-01', 'image-01-live'])),
-          { key: 'image/wavespeed', vendor: 'wavespeed', title: 'WaveSpeed', fields: [
-            secret('WAVESPEED_API_KEY', 'API Key'),
-            text('WAVESPEED_BASE_URL', 'Base URL', '默认 https://api.wavespeed.ai'),
-            modelText('WAVESPEED_IMAGE_MODEL', '生图模型', 'wavespeed-ai/flux-dev'),
-          ] },
-          byteplusPage('image', modelText('BYTEPLUS_IMAGE_MODEL', '生图模型', 'seedream-4-5-251128',
-            '测试连接后可直接选择接口返回的模型，也可以手动填写模型 ID。', true), 'BytePlus · Seedream'),
-          { key: 'image/xai', vendor: 'xai', title: 'xAI · Grok Imagine',
-            note: '使用 xAI 订阅会话（SuperGrok / X Premium+，优先）或 LLM_XAI_API_KEY 生成图片。文生图：最多 4 张，1K / 2K。',
-            fields: [
-              modelText('XAI_IMAGE_MODEL', '生图模型', 'grok-imagine-image-2.0',
-                '测试连接后可直接选择接口返回的模型，也可以手动填写模型 ID。', true),
-            ] },
-        ] },
-      VOICE_SETTINGS_GROUP,
-      { key: 'video', title: '生视频', hint: 'submit_video · 文 / 图生视频，任一厂商即可。',
-        route: routeSelect('PREFERRED_VIDEO_VENDOR', [
-          { value: 'fal', label: 'Fal.ai' },
-          { value: 'seedance2', label: 'Seedance' },
-          { value: 'kling', label: '可灵' },
-          { value: 'hailuo', label: 'MiniMax 海螺' },
-          { value: 'byteplus', label: 'BytePlus · Seedance' },
-          { value: 'grok-imagine-video', label: 'xAI Grok Imagine' },
-          { value: 'ofox', label: 'OFox · 多模型' },
-        ]),
-        vendors: [
-          falPage('video'),
-          { key: 'video/seedance', vendor: 'seedance', title: 'Seedance · 火山', fields: [
-            secret('SEEDANCE_API_KEY', 'API Key'),
-            text('SEEDANCE_BASE_URL', 'Base URL', '默认 https://ark.cn-beijing.volces.com/api/v3'),
-            modelText('SEEDANCE_VIDEO_MODEL', '视频模型', 'doubao-seedance-2-0-260128'),
-          ] },
-          { key: 'video/kling', vendor: 'kling', title: '可灵 Kling', fields: [
-            secret('KLING_API_KEY', 'API Key'),
-            text('KLING_BASE_URL', 'Base URL', '默认 https://api-singapore.klingai.com'),
-            modelText('KLING_VIDEO_MODEL', '视频模型', 'kling-v3-omni'),
-          ] },
-          minimaxPage('video', modelPicker('MINIMAX_VIDEO_MODEL', '视频模型', 'MiniMax-Hailuo-02',
-            ['MiniMax-Hailuo-02', 'MiniMax-Hailuo-2.3', 'MiniMax-Hailuo-2.3-Fast', 'S2V-01']), 'MiniMax 海螺', 'hailuo'),
-          byteplusPage('video', modelText('BYTEPLUS_VIDEO_MODEL', '视频模型', 'seedance-1-5-pro-251215',
-            '测试连接后可直接选择接口返回的模型，也可以手动填写模型 ID。', true), 'BytePlus · Seedance'),
-          { key: 'video/xai', vendor: 'xai', title: 'xAI · Grok Imagine (视频)',
-            note: '使用 xAI 订阅会话（SuperGrok / X Premium+，优先）或 LLM_XAI_API_KEY 生成视频。文生视频：1–15 秒，自带音轨，480p / 720p / 1080p。',
-            fields: [
-              modelText('XAI_VIDEO_MODEL', '视频模型', 'grok-imagine-video-1.5',
-                '测试连接后可直接选择接口返回的模型，也可以手动填写模型 ID。', true),
-            ] },
-          { key: 'video/ofox', vendor: 'ofox', title: 'OFox · 多模型网关',
-            note: '使用 LLM_OFOX_API_KEY（在 Agent 供应商里配置 OFox）生成视频。一个 Key 覆盖 Seedance、Wan 等视频模型；支持文生视频、首帧/首尾帧图生视频与图片参考（最多 9 张）；时长/分辨率按模型由 API 校验，2–30 秒。',
-            fields: [
-              modelText('OFOX_VIDEO_MODEL', '视频模型', 'bytedance/seedance-2.0-fast',
-                '测试连接后可直接选择接口返回的模型，也可以手动填写模型 ID。', true),
-            ] },
-        ] },
-      { key: 'music', title: '生音乐', hint: 'submit_music · 文字 / 成片生成配乐，任一厂商即可。',
-        route: routeSelect('PREFERRED_MUSIC_VENDOR', [
-          { value: 'mureka', label: 'Mureka' },
-          { value: 'minimax', label: 'MiniMax' },
-          { value: 'atlas', label: 'Atlas Cloud' },
-          { value: 'sonilo', label: 'Sonilo' },
-        ]),
-        vendors: [
-          { key: 'music/mureka', vendor: 'mureka', title: 'Mureka', fields: [
-            secret('MUREKA_API_KEY', 'API Key'),
-            text('MUREKA_BASE_URL', 'Base URL', '默认 https://api.mureka.ai'),
-            modelText('MUREKA_MUSIC_MODEL', '音乐模型', 'auto'),
-          ] },
-          minimaxPage('music', modelPicker('MINIMAX_MUSIC_MODEL', '音乐模型', 'music-2.6',
-            ['music-3.0', 'music-2.6', 'music-3.0-free', 'music-2.6-free', 'music-cover', 'music-cover-free'])),
-          { key: 'music/atlas', vendor: 'atlas', title: 'Atlas Cloud', fields: [
-            secret('ATLASCLOUD_API_KEY', 'API Key'),
-            text('ATLASCLOUD_API_BASE', 'Base URL', '默认 https://api.atlascloud.ai/api/v1'),
-            modelPicker('ATLASCLOUD_MUSIC_MODEL', '音乐模型', 'minimax/music-2.6', ['minimax/music-2.6']),
-          ] },
-          { key: 'music/sonilo', vendor: 'sonilo', title: 'Sonilo',
-            note: '按成片生成：把渲染好的视频交给 Sonilo，配乐跟着画面节奏走（可选一句风格提示，不填也行）。'
-              + '配乐自带授权、可商用（以条款为准）；每条音轨附 license_id 留档。'
-              + '同一个 Key 也用于按成片生成音效（submit_sound，免版税）。',
-            fields: [
-              secret('SONILO_API_KEY', 'API Key'),
-              text('SONILO_BASE_URL', 'Base URL', '默认 https://api.sonilo.com'),
-            ] },
-        ] },
     ],
   },
   {
@@ -353,27 +188,12 @@ export function modelValue(status: KeyStatusResponse | null, name: string): stri
 export function vendorConfigured(
   status: KeyStatusResponse | null,
   page: SettingsVendorPage,
-  codexStatus?: CodexAgentStatus | null,
-  copilotStatus?: CopilotAgentStatus | null,
   claudeCodeStatus?: ClaudeCodeAgentStatus | null,
 ): boolean {
-  if (page.connection === 'codex') {
-    return Boolean(codexStatus?.installed && codexStatus.account?.type === 'chatgpt');
-  }
-  if (page.connection === 'copilot') {
-    return Boolean(copilotStatus?.installed && copilotStatus.supported && copilotStatus.authenticated);
-  }
   if (page.connection === 'claude-code') {
     return Boolean(claudeCodeStatus?.installed && claudeCodeStatus.account?.loggedIn);
   }
-  if (page.connection === 'xai-oauth') {
-    return Boolean(status?.keys?.LLM_XAI_OAUTH_API_KEY?.configured);
-  }
   if (!status) return false;
-  if (isLocalLlmProvider(page.vendor)) {
-    const names = llmProviderConfigNames(page.vendor);
-    return Boolean(status.models[names.model]?.trim());
-  }
   const secrets = page.fields.filter((f) => f.kind === 'secret');
   if (secrets.length === 0) return page.fields.some((f) => Boolean(status.keys[f.name]?.configured));
   return secrets.every((f) => Boolean(status.keys[f.name]?.configured));
@@ -382,13 +202,11 @@ export function vendorConfigured(
 export function groupConfigured(
   status: KeyStatusResponse | null,
   group: SettingsGroup,
-  codexStatus?: CodexAgentStatus | null,
-  copilotStatus?: CopilotAgentStatus | null,
   claudeCodeStatus?: ClaudeCodeAgentStatus | null,
 ): boolean {
   if (group.key === 'llm' || group.key === 'proxy') {
     return group.vendors.some((page) =>
-      vendorConfigured(status, page, codexStatus, copilotStatus, claudeCodeStatus));
+      vendorConfigured(status, page, claudeCodeStatus));
   }
   return status ? Boolean(status.caps[group.key]) : false;
 }
@@ -397,14 +215,12 @@ export function groupConfigured(
 export function categoryGroupStats(
   status: KeyStatusResponse | null,
   category: SettingsCategory,
-  codexStatus?: CodexAgentStatus | null,
-  copilotStatus?: CopilotAgentStatus | null,
   claudeCodeStatus?: ClaudeCodeAgentStatus | null,
 ): { done: number; total: number } {
   return {
     done: category.groups
       .filter((group) =>
-        groupConfigured(status, group, codexStatus, copilotStatus, claudeCodeStatus)).length,
+        groupConfigured(status, group, claudeCodeStatus)).length,
     total: category.groups.length,
   };
 }

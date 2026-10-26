@@ -4,7 +4,6 @@ import type { AgentEvent } from './runtime';
 import type { AgentModelChoice } from './model-selection';
 import type { ChatCompletionsMediaPreparation } from './messages';
 import {
-  makeMessagesPortable,
   prepareChatCompletionsMediaMessages,
   withoutModelImages,
 } from './messages';
@@ -87,12 +86,8 @@ export async function prepareApiMessages(
       ? await describeImagesForTextModel(conv, vision, signal)
       : withoutModelImages(conv);
   }
-  const requestCarriesMedia = protocol === 'openai-compatible'
-    && supportsImages && !compatibleMediaFallbackRequired && mediaPreparation.movedMedia;
-  const requestMessages = protocol === 'openai'
-    ? makeMessagesPortable(textOnlyMessages, choice.openAiApiMode)
-    : protocol === 'openai-compatible' && supportsImages && !compatibleMediaFallbackRequired
-      ? mediaPreparation.messages
-      : textOnlyMessages;
-  return { protocol, mediaPreparation, requestMessages, requestCarriesMedia };
+  // Claude takes images natively in the Messages API: send the conversation
+  // as-is (or with images described when the model is text-only).
+  void compatibleMediaFallbackRequired;
+  return { protocol, mediaPreparation, requestMessages: textOnlyMessages, requestCarriesMedia: false };
 }

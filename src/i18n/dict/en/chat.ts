@@ -175,15 +175,15 @@ export default {
   '提炼高光并重排为短视频': 'Find highlights and reshape them as shorts',
   '产品故事': 'Product story',
   '围绕卖点组织脚本和镜头': 'Build the script and shots around key benefits',
-  'AI 影像': 'AI visual',
-  '从概念生成镜头与声音': 'Develop shots and sound from a concept',
+  '卡点混剪': 'Beat-sync montage',
+  '按音乐节拍剪辑素材': 'Cut your footage to the music beat',
   '知识成片': 'Knowledge video',
   '把主题整理成清晰讲解': 'Turn a topic into a clear explanation',
   '精剪当前口播：去掉无效停顿和赘词，并生成同步字幕': 'Polish the current talking-head video: remove dead air and filler, then generate synced captions',
   '为当前内容设计动态包装，包含标题、信息卡和转场动效': 'Design a motion package for the current content, including titles, info cards, and transitions',
   '从当前长视频中提炼高光，重排成适合发布的短视频': 'Find highlights in the current long video and reshape them into publish-ready shorts',
   '围绕产品卖点组织脚本和镜头，制作一支产品宣传短片': 'Build a script and shot sequence around the product benefits, then create a promo',
-  '根据我的概念策划一支 AI 影像，补全镜头、声音和节奏': 'Plan an AI visual from my concept, developing the shots, sound, and pacing',
+  '用当前素材和背景音乐剪一支卡点混剪，镜头切换对齐音乐节拍': 'Cut a beat-sync montage from the current footage and background music, with cuts aligned to the beat',
   '把主题整理成结构清晰、带字幕和视觉提示的讲解视频': 'Turn the topic into a structured explainer with captions and visual cues',
 
   // ── "Thinking" phrases on set (en/zh bilingual list) ──

@@ -94,8 +94,7 @@ export const TOOL_SCHEMAS: AgentToolSchema[] = [
   ...FRAMES_TOOL_SCHEMAS,
   // Local FFmpeg scene detection: report cut points or atomically generate markers and batch cuts.
   ...SCENE_DETECTION_TOOL_SCHEMAS,
-  // AI generation tools from generate-tools.ts: submit_image/video/voice/music/sound.
-  // track_progress also accepts target=transcription for upload-and-transcribe readiness.
+  // submit_export plus track_progress (transcription / upload / visual-analysis readiness).
   ...withProgressTargets(GENERATE_TOOL_SCHEMAS),
   // browse_library → edit_item provides unified discovery and application for fx/lut/zoom/transition/sound.
   ...LIBRARY_TOOL_SCHEMAS,

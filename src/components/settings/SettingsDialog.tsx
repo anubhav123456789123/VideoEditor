@@ -10,17 +10,11 @@ import {
   TRANSCRIPTION_LANGUAGE_KEY,
   setPreferredTranscriptionProvider,
 } from '../../transcript/provider';
-import { isTranscriptionProviderId } from '../../transcript/types';
 import { isAsrModelTier } from '../../../shared/asr-models';
 import { setAutoTranscribeIngest } from '../../transcript/provider';
 import { FieldRow, ON, VendorPane, WARN, type FieldCtx } from './settingsVendorPane';
-import { useCodexSettings } from './useCodexSettings';
 import { useClaudeCodeSettings } from './useClaudeCodeSettings';
-import type { CodexAgentStatus } from '../../../shared/codex-agent';
-import type { CopilotAgentStatus } from '../../../shared/copilot-agent';
 import type { ClaudeCodeAgentStatus } from '../../../shared/claude-code-agent';
-import { useCopilotSettings } from './useCopilotSettings';
-import { stageFieldValue } from './codexReasoning';
 import { SettingsVersionControl } from './SettingsVersionControl';
 import {
   CURRENT_APP_VERSION,
@@ -35,7 +29,7 @@ import {
 } from '../../ui/upstreamUpdateAction';
 import {
   SETTINGS_CATEGORIES, buildPatch, categoryGroupStats, findGroup, groupConfigured,
-  modelValue, omitKey, savedMessage, vendorConfigured,
+  isModelField, modelValue, omitKey, savedMessage, vendorConfigured,
   type KeyStatusResponse, type SettingsCategory, type SettingsField, type SettingsGroup,
   type SettingsVendorPage, type StagedValues as Values,
 } from './settingsSchema';
@@ -89,8 +83,7 @@ function syncTranscriptionPreferences(models: Record<string, string>): void {
   } catch {
     // Best-effort; runtime language and diarization defaults remain in effect.
   }
-  const provider = models.PREFERRED_TRANSCRIPTION_PROVIDER;
-  setPreferredTranscriptionProvider(isTranscriptionProviderId(provider) ? provider : 'assemblyai');
+  setPreferredTranscriptionProvider('local');
   const ingest = models.AUTO_TRANSCRIBE_INGEST;
   if (ingest === 'off' || ingest === 'local' || ingest === 'all') setAutoTranscribeIngest(ingest);
 }
@@ -220,29 +213,17 @@ function useFieldContext(
   setValues: React.Dispatch<React.SetStateAction<Values>>,
   reveal: boolean,
   refreshStatus: () => Promise<void>,
-  copilotEnabled: boolean,
   openPage: (route: string) => void,
 ): FieldCtx {
   const [modelOptions, setModelOptions] = useState<Record<string, readonly string[]>>({});
-  const [autoClearedEffort, setAutoClearedEffort] = useState<string | null>(null);
-  const codex = useCodexSettings(
-    modelValue(status, 'CODEX_MODEL'),
-    modelValue(status, 'CODEX_REASONING_EFFORT'),
-  );
-  const copilot = useCopilotSettings(copilotEnabled);
   const claudeCode = useClaudeCodeSettings(modelValue(status, 'CLAUDE_CODE_MODEL'));
   const onStage = (field: SettingsField, raw: string): void => {
-    const staged = stageFieldValue(values, field, raw, status, codex.models, autoClearedEffort);
-    setValues(staged.values);
-    setAutoClearedEffort(staged.autoClearedEffort);
+    // Staging the value the server already has is a no-op, not a change.
+    const baseline = isModelField(field) ? modelValue(status, field.name) : '';
+    setValues(raw === baseline ? omitKey(values, field.name) : { ...values, [field.name]: raw });
   };
-  useEffect(() => {
-    if (!('CODEX_MODEL' in values) && !('CODEX_REASONING_EFFORT' in values)) {
-      setAutoClearedEffort(null);
-    }
-  }, [values]);
   const onToggleClear = (field: SettingsField): void => {
-    if (field.name === 'CODEX_MODEL' || field.name === 'CLAUDE_CODE_MODEL') {
+    if (field.name === 'CLAUDE_CODE_MODEL') {
       onStage(field, values[field.name] === '' ? modelValue(status, field.name) : '');
       return;
     }
@@ -251,7 +232,7 @@ function useFieldContext(
       : { ...previous, [field.name]: '' });
   };
   return {
-    status, values, reveal, onStage, onToggleClear, modelOptions, codex, copilot, claudeCode,
+    status, values, reveal, onStage, onToggleClear, modelOptions, claudeCode,
     refreshStatus, openPage,
     onModelsDiscovered: (name, models) => {
       setModelOptions((previous) => ({ ...previous, [name]: [...new Set(models)] }));
@@ -280,8 +261,7 @@ export function SettingsDialog({ onClose, initialVendor }: { onClose: () => void
       // Keep the stale snapshot; the next save or dialog open refreshes it.
     }
   };
-  const ctx = useFieldContext(status, values, setValues, reveal, refreshStatus,
-    page.connection === 'copilot', openPage);
+  const ctx = useFieldContext(status, values, setValues, reveal, refreshStatus, openPage);
   useEffect(() => {
     if (!status?.models) return;
     syncTranscriptionPreferences(status.models);
@@ -302,8 +282,6 @@ export function SettingsDialog({ onClose, initialVendor }: { onClose: () => void
 
   const updateAction = resolveUpstreamUpdateAction(updateState, hasDesktopUpdateSupport());
 
-  const codexStatus = ctx.codex.status;
-  const copilotStatus = ctx.copilot.status;
   const claudeCodeStatus = ctx.claudeCode.status;
 
   const shownError = error ?? loadError;
@@ -330,8 +308,7 @@ export function SettingsDialog({ onClose, initialVendor }: { onClose: () => void
           </div>
         </header>
         <div style={bodyRow}>
-          <CapabilityTree status={status} codexStatus={codexStatus} copilotStatus={copilotStatus}
-            claudeCodeStatus={claudeCodeStatus}
+          <CapabilityTree status={status} claudeCodeStatus={claudeCodeStatus}
             activeGroup={group.key} onSelect={selectGroup} />
           <VendorList group={group} activeVendor={page.key} onSelectVendor={selectVendor} ctx={ctx} />
           <VendorPane page={page} hint={group.hint} ctx={ctx} />
@@ -346,10 +323,9 @@ export function SettingsDialog({ onClose, initialVendor }: { onClose: () => void
 // ── Left column (categories can be folded → capabilities can be selected) ──────────────────────────────────────
 
 function CapabilityTree({
-  status, codexStatus, copilotStatus, claudeCodeStatus, activeGroup, onSelect,
+  status, claudeCodeStatus, activeGroup, onSelect,
 }: {
-  status: KeyStatusResponse | null; codexStatus: CodexAgentStatus | null;
-  copilotStatus: CopilotAgentStatus | null;
+  status: KeyStatusResponse | null;
   claudeCodeStatus: ClaudeCodeAgentStatus | null;
   activeGroup: string; onSelect: (key: string) => void;
 }) {
@@ -365,8 +341,7 @@ function CapabilityTree({
     <nav style={sidebar}>
       <div style={treeScroll}>
         {SETTINGS_CATEGORIES.map((cat) => (
-          <TreeCategory key={cat.key} category={cat} status={status} codexStatus={codexStatus}
-            copilotStatus={copilotStatus} claudeCodeStatus={claudeCodeStatus}
+          <TreeCategory key={cat.key} category={cat} status={status} claudeCodeStatus={claudeCodeStatus}
             open={!collapsed.has(cat.key)} activeGroup={activeGroup}
             onToggle={() => toggle(cat.key)} onSelect={onSelect} />
         ))}
@@ -379,17 +354,16 @@ function CapabilityTree({
 }
 
 interface TreeCategoryProps {
-  category: SettingsCategory; status: KeyStatusResponse | null; codexStatus: CodexAgentStatus | null;
-  copilotStatus: CopilotAgentStatus | null;
+  category: SettingsCategory; status: KeyStatusResponse | null;
   claudeCodeStatus: ClaudeCodeAgentStatus | null;
   open: boolean; activeGroup: string; onToggle: () => void; onSelect: (key: string) => void;
 }
 
 function TreeCategory({
-  category, status, codexStatus, copilotStatus, claudeCodeStatus, open, activeGroup, onToggle, onSelect,
+  category, status, claudeCodeStatus, open, activeGroup, onToggle, onSelect,
 }: TreeCategoryProps) {
   const t = useT();
-  const { done, total } = categoryGroupStats(status, category, codexStatus, copilotStatus, claudeCodeStatus);
+  const { done, total } = categoryGroupStats(status, category, claudeCodeStatus);
   return (
     <div>
       <button type="button" onClick={onToggle} title={open ? t('收起') : t('展开')} style={catRow}>
@@ -404,7 +378,7 @@ function TreeCategory({
       </button>
       {open && category.groups.map((g) => (
         <GroupRow key={g.key} title={g.title}
-          on={groupConfigured(status, g, codexStatus, copilotStatus, claudeCodeStatus)}
+          on={groupConfigured(status, g, claudeCodeStatus)}
           active={g.key === activeGroup} onSelect={() => onSelect(g.key)} />
       ))}
     </div>
@@ -435,7 +409,7 @@ function VendorList({ group, activeVendor, onSelectVendor, ctx }: {
       {group.route && <div style={routeBox}><FieldRow field={group.route} ctx={ctx} /></div>}
       {group.vendors.map((p) => (
         <VendorRow key={p.key} page={p}
-          on={vendorConfigured(ctx.status, p, ctx.codex.status, ctx.copilot.status, ctx.claudeCode.status)}
+          on={vendorConfigured(ctx.status, p, ctx.claudeCode.status)}
           active={p.key === activeVendor} onSelect={() => onSelectVendor(p.key)} />
       ))}
     </div>

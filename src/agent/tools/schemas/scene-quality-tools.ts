@@ -6,7 +6,7 @@ export const SCENE_QUALITY_TOOL_SCHEMAS: AgentToolSchema[] = [
     description: [
       'Advisory review of a multi-scene plan for repetition, decorative visuals, static-card overuse, and generic language.',
       'Returns a normalized 0–5 risk score, revision advice, and affected scene numbers.',
-      'The report is optional advice and never blocks or authorizes submit_image/submit_video.',
+      'The report is optional advice and never blocks an edit.',
     ].join(' '),
     input_schema: {
       type: 'object',

@@ -114,7 +114,7 @@ async function seedChat(projectId: string, text: string): Promise<void> {
     llm: [{ role: 'user', content: text }],
     changeLog: [{ id: 'keep-rollback-history' }],
     llmFormat: 'ai-sdk-v1',
-    llmProvider: 'deepseek',
+    llmProvider: 'anthropic',
   });
 }
 
