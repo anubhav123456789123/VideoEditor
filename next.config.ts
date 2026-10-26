@@ -29,6 +29,15 @@ const nextConfig: NextConfig = {
   // served by the plugin chain in server/next-host.ts ahead of Next.
   devIndicators: false,
   poweredByHeader: false,
+  // Image imports are URL strings (Vite semantics, see turbopack.rules), not
+  // StaticImageData; this also drops Next's conflicting `*.png` declarations.
+  images: { disableStaticImages: true },
+  experimental: {
+    // Production export-name mangling renames a text module's `default` export
+    // while import.meta.glob(..., { import: 'default' }) consumers still read
+    // `.default` (agent skills came out undefined). Keep export names stable.
+    turbopackMangleExportNames: false,
+  },
   typescript: { tsconfigPath: 'tsconfig.next.json' },
   compiler: {
     define: {

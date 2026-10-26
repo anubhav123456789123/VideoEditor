@@ -6,7 +6,9 @@
 // (app/) and the editor bundle compiled by Turbopack.
 import { existsSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
-import next from 'next';
+// The package entry (same module as 'next'), imported by path so Next's global
+// type augmentation does not leak into the server/CLI type program.
+import next from 'next/dist/server/next.js';
 import type { ViteDevServer } from 'vite';
 import nextEnv from '@next/env';
 import { serverPlugins } from './plugins/index.ts';
