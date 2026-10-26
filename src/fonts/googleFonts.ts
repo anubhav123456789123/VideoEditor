@@ -15,6 +15,7 @@ import {
   findLocalFont,
   registerLocalFonts,
 } from './localFonts';
+import { ensureFontshareFont, findFontshareFont } from './fontshareFonts';
 
 interface FontLoadResult {
   waitUntilDone: () => Promise<void>;
@@ -63,11 +64,12 @@ async function loadGoogleFace(family: string): Promise<FontLoadResult> {
 const fontPromises = new Map<string, Promise<void>>();
 
 /** Load one referenced face and resolve only after browser/headless readiness. */
-export function ensureFont(family: string, _fontWeight = 400): Promise<void> {
+export function ensureFont(family: string, fontWeight = 400): Promise<void> {
   if (isGenericFontFamily(family)) return Promise.resolve();
   const canonical = resolveCanonicalFamily(family);
   if (!canonical) return Promise.resolve();
   if (findLocalFont(canonical)) return ensureLocalFont(canonical);
+  if (findFontshareFont(canonical)) return ensureFontshareFont(canonical, fontWeight);
   const metadata = GOOGLE_FONT_CATALOG.find((entry) => entry.family === canonical);
   if (!metadata) return Promise.resolve();
 

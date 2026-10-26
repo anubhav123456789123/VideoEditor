@@ -63,6 +63,39 @@
 </p>
 
 ---
+## This build: Next.js 16 · Claude only
+
+This fork hosts the full OpenChatCut editor on **Next.js 16** (Turbopack) and makes **Claude** the only AI.
+Every editor feature, timeline mechanic and server endpoint is carried over unchanged (the original verify
+suite and a 22-step timeline E2E produce identical results), with these changes:
+
+- **Claude only.** Chat runs on the Anthropic API (`LLM_ANTHROPIC_API_KEY`, default model `claude-opus-5-5`)
+  or your Claude Code login. Claude Code can also drive the editor over MCP (`claude mcp add …`, shown in
+  Settings → MCP). Other LLM vendors and the AI image / video / voice / music / sound-effect generators were
+  removed; transcription runs on-device with Whisper.
+- **Monochrome UI.** Paper (white · grey · black, the default) and Onyx skins, a simplified Claude chat panel,
+  and Tailwind v4 + shadcn/ui + Motion for the new panels.
+- **Local asset library** (Library → Assets): drop files into `assets/sfx`, `assets/music`,
+  `assets/transitions` (GLSL) and `assets/motion-graphics` (Remotion `.jsx` or HyperFrames `.html`), then click
+  or drag them onto the timeline. Claude sees them too (`browse_library`, `edit_item`). Each folder has a README.
+- **Motion Graphics studio** (Library → Motion Graphics): describe a graphic and Claude writes it as a Remotion
+  component (an editable MG clip) or a [HeyGen HyperFrames](https://github.com/heygen-com/hyperframes)
+  composition (rendered to transparent ProRes). Preview it, insert it into the timeline, or save it to the library.
+- **Captions:** seven new presets set in [Fontshare](https://www.fontshare.com) families (Satoshi, Clash Display,
+  General Sans, Cabinet Grotesk, Boska, Tanker, Switzer) and four new motion effects (typewriter, word slide-up,
+  blur-in, bounce). Fontshare fonts load at runtime from the Fontshare API and are never bundled; all 18 families
+  are also available in every font picker.
+
+```bash
+npm install
+cp .env.example .env.local   # add LLM_ANTHROPIC_API_KEY, or use Claude Code
+npm run dev                  # http://localhost:5199
+npm run build && npm start   # production
+```
+
+The Electron desktop shell is not yet wired to the Next.js host; `npm run dev` / `npm start` serve the editor.
+
+---
 ## Sponsors
 
 <p align="center">
@@ -291,9 +324,8 @@ the legacy shared development store.
 
 ### Built-in Agent authentication
 
-- **API keys:** open **Settings → Agent model**, choose a provider, and save its API key and model. Keys remain server-side.
-- **ChatGPT subscription:** install the official Codex CLI 0.146.0 or newer, then open **Settings → Agent model → OpenAI · Codex**. Sign in through the browser or device-code flow, load the account's models, choose a model-specific reasoning effort (or keep its default), and select Codex from the chat model picker. OpenChatCut uses a dedicated Codex profile; the official CLI owns credential storage, token renewal, and logout, while OAuth tokens are never exposed to the browser.
-- **Claude subscription:** OpenChatCut does not collect Claude OAuth credentials. Use Claude Code through the local MCP connection below. The built-in Agent can use Anthropic through an API key.
+- **Claude API key:** open **Settings → Agent model → Claude API** and save an Anthropic API key and model. Keys remain server-side.
+- **Claude subscription:** sign in to Claude Code (2.1.263 or newer) and choose it in **Settings → Agent model → Claude Code**. OpenChatCut never collects Claude OAuth credentials; the Claude Code CLI owns sign-in. Claude Code can also connect to the editor through the local MCP connection below.
 
 The built-in Agent always runs the model loop on the local server. Chat, drafts, and proposals survive page refreshes and local service restarts. Timeline changes still go through the active editor's validated, undoable commands.
 

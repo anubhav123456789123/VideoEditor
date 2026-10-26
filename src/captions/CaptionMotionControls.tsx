@@ -13,7 +13,7 @@ export function CaptionMotionControls({ value, onChange }: CaptionMotionControls
   return (
     <div className="cc-cap-field">
       <div className="cc-cap-label">{t('字幕动效')}</div>
-      <div className="cc-cap-pills" role="listbox" aria-label={t('字幕动效')}>
+      <div className="cc-cap-pills" role="listbox" aria-label={t('字幕动效')} style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
         {CAPTION_MOTION_OPTIONS.map((option) => (
           <button
             key={option.id}

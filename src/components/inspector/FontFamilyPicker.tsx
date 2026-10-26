@@ -2,6 +2,7 @@ import React, { useState, type CSSProperties } from 'react';
 import { useSystemFonts } from '../../fonts/systemFonts';
 import { GOOGLE_FONT_CATALOG } from '../../fonts/googleFontCatalog';
 import { LOCAL_CJK_FONTS } from '../../fonts/localFonts';
+import { FONTSHARE_FONTS } from '../../fonts/fontshareFonts';
 import { useT } from '../../i18n/locale';
 
 export interface FontFamilyPickerProps {
@@ -56,6 +57,7 @@ export function FontFamilyPicker({
     systemFonts.includes(value) ||
     customFonts.includes(value) ||
     GOOGLE_FONT_CATALOG.some((f) => f.family === value) ||
+    FONTSHARE_FONTS.some((f) => f.family === value) ||
     LOCAL_CJK_FONTS.some((f) => f.family === value);
 
   return (
@@ -122,6 +124,15 @@ export function FontFamilyPicker({
           <optgroup label={`${t('Google 字体')} (${GOOGLE_FONT_CATALOG.length})`}>
             {GOOGLE_FONT_CATALOG.map((f) => (
               <option key={`google-${f.family}`} value={f.family} style={{ fontFamily: f.family }}>
+                {f.family}
+              </option>
+            ))}
+          </optgroup>
+
+          {/* Fontshare Online Fonts (loaded from the Fontshare CSS API, never bundled) */}
+          <optgroup label={`Fontshare (${FONTSHARE_FONTS.length})`}>
+            {FONTSHARE_FONTS.map((f) => (
+              <option key={`fontshare-${f.family}`} value={f.family} style={{ fontFamily: f.family }}>
                 {f.family}
               </option>
             ))}

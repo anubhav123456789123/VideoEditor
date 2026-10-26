@@ -30,7 +30,7 @@ const schema = CAPTIONS_TOOL_SCHEMAS.find((tool) => tool.name === 'edit_captions
 const actionSchema = schema.input_schema.properties?.action as { enum?: string[] };
 const motionSchema = schema.input_schema.properties?.motionPreset as { enum?: string[] };
 assert.ok(actionSchema.enum?.includes('animation'));
-assert.deepEqual(motionSchema.enum, ['none', 'fade-up', 'pop', 'word-pop', 'karaoke-pulse']);
+assert.deepEqual(motionSchema.enum, ['none', 'fade-up', 'pop', 'word-pop', 'karaoke-pulse', 'typewriter', 'slide-up', 'blur-in', 'bounce']);
 
 for (const motionPreset of motionSchema.enum ?? []) {
   const result = await execCaptionsTool('edit_captions', { action: 'animation', motionPreset }, ctx) as {
@@ -52,7 +52,7 @@ assert.match(invalid.error ?? '', /animation needs motionPreset/);
 assert.deepEqual(draft.getDoc(), beforeInvalid, 'invalid motion must not mutate the project');
 
 const read = await execCaptionsTool('read_captions', {}, ctx) as { motionPreset?: string };
-assert.equal(read.motionPreset, 'karaoke-pulse');
+assert.equal(read.motionPreset, 'bounce');
 
 __resetCaptionPresetMemory();
 await execCaptionsTool('edit_captions', { action: 'animation', motionPreset: 'pop' }, ctx);

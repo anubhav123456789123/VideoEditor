@@ -44,4 +44,23 @@ assert.deepEqual(captionWordMotionStyle('karaoke-pulse', page.words[0]!, 999), {
 assert.equal(captionWordMotionStyle('karaoke-pulse', page.words[0]!, 1_200).transform, 'scale(1.08)');
 assert.deepEqual(captionPageMotionStyle('word-pop', page, 1_200), {});
 
+// Open-source-style word effects: typewriter keeps word slots, slide-up rises in, bounce lifts the active word,
+// blur-in sharpens the page; all deterministic in timeline milliseconds.
+assert.equal(captionWordMotionStyle('typewriter', page.words[1]!, 1_499).opacity, 0);
+assert.equal(captionWordMotionStyle('typewriter', page.words[1]!, 1_500).opacity, 1);
+assert.equal(captionWordMotionStyle('typewriter', page.words[1]!, 1_500).transform, undefined, 'typewriter never moves words');
+const slideStart = captionWordMotionStyle('slide-up', page.words[1]!, 1_500);
+assert.equal(slideStart.opacity, 0);
+assert.equal(slideStart.transform, 'translateY(40%)');
+assert.equal(captionWordMotionStyle('slide-up', page.words[1]!, 1_800).transform, 'translateY(0%)');
+assert.deepEqual(captionWordMotionStyle('bounce', page.words[1]!, 1_400), {}, 'bounce only moves the active word');
+assert.ok(String(captionWordMotionStyle('bounce', page.words[1]!, 1_620).transform).startsWith('translateY(-'));
+assert.equal(captionWordMotionStyle('bounce', page.words[1]!, 1_800).transform, 'translateY(0%)', 'the bounce settles');
+const blurStart = captionPageMotionStyle('blur-in', page, 1_000);
+assert.equal(blurStart.filter, 'blur(8px)');
+assert.equal(captionPageMotionStyle('blur-in', page, 1_600).filter, 'blur(0px)');
+assert.deepEqual(captionWordMotionStyle('blur-in', page.words[0]!, 1_100), {}, 'blur-in is page-level only');
+assert.deepEqual(captionPageMotionStyle('typewriter', page, 1_100), {}, 'typewriter is word-level only');
+for (const preset of ['typewriter', 'slide-up', 'blur-in', 'bounce']) assert.equal(isCaptionMotionPreset(preset), true);
+
 console.log('captionMotion.verify: deterministic preview/export motion contract passed');

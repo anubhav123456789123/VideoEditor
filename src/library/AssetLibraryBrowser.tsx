@@ -249,11 +249,16 @@ function AssetPreview({ entry, fps, busy, transition, template }: {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
+      {/* Previews are visual only: the card button must keep receiving clicks and drags. */}
       {hover && template ? (
-        <RemotionPreview code={template.code} fps={fps} width={template.width} height={template.height}
-          seconds={template.durationInFrames / template.fps} controls={false} />
+        <div className="pointer-events-none absolute inset-0">
+          <RemotionPreview code={template.code} fps={fps} width={template.width} height={template.height}
+            seconds={template.durationInFrames / template.fps} controls={false} />
+        </div>
       ) : hover && html ? (
-        <HyperframesPreview html={html} width={width} height={height} />
+        <div className="pointer-events-none absolute inset-0">
+          <HyperframesPreview html={html} width={width} height={height} />
+        </div>
       ) : (
         <div className="flex h-full items-center justify-center">
           <motion.span animate={busy ? { scale: [1, 1.15, 1] } : { scale: 1 }} transition={busy ? { repeat: Infinity, duration: 1 } : undefined} className="text-muted-foreground">

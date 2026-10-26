@@ -176,7 +176,7 @@ export async function editCaptions(args: Args, ctx: AgentContext): Promise<Resul
     const requestedPreset = str(args.motionPreset) || str(json.preset);
     if (!isCaptionMotionPreset(requestedPreset)) {
       return {
-        error: 'animation needs motionPreset: none|fade-up|pop|word-pop|karaoke-pulse',
+        error: 'animation needs motionPreset: none|fade-up|pop|blur-in|word-pop|karaoke-pulse|typewriter|slide-up|bounce',
       };
     }
     const motionPreset: CaptionMotionPreset = requestedPreset;

@@ -1,7 +1,8 @@
 import { LOCAL_CJK_FONTS, normalizeFontKey } from './localFonts';
 import { getAllDiscoveredFonts, isInstalledFont } from './systemFonts';
+import { FONTSHARE_FONTS } from './fontshareFonts';
 
-export type FontSource = 'google' | 'bundled' | 'system' | 'custom';
+export type FontSource = 'google' | 'fontshare' | 'bundled' | 'system' | 'custom';
 
 export interface FontCatalogEntry {
   family: string;
@@ -50,6 +51,12 @@ export const GOOGLE_FONT_CATALOG: readonly GoogleFontCatalogEntry[] = [
 
 export const FONT_CATALOG: readonly FontCatalogEntry[] = [
   ...GOOGLE_FONT_CATALOG,
+  ...FONTSHARE_FONTS.map((font) => ({
+    family: font.family,
+    aliases: [font.slug],
+    loadable: true as const,
+    source: 'fontshare' as const,
+  })),
   ...LOCAL_CJK_FONTS.map((font) => ({
     family: font.family,
     aliases: [...font.aliasZh, font.importName],
