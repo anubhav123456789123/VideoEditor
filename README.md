@@ -73,7 +73,7 @@ suite and a 22-step timeline E2E produce identical results), with these changes:
   or your Claude Code login. Claude Code can also drive the editor over MCP (`claude mcp add …`, shown in
   Settings → MCP). Other LLM vendors and the AI image / video / voice / music / sound-effect generators were
   removed; transcription runs on-device with Whisper.
-- **Monochrome UI.** Paper (white · grey · black, the default) and Onyx skins, a simplified Claude chat panel,
+- **Monochrome UI.** Onyx (dark, the default) and Paper (white · grey · black) skins, a simplified Claude chat panel,
   and Tailwind v4 + shadcn/ui + Motion for the new panels.
 - **Local asset library** (Library → Assets): drop files into `assets/sfx`, `assets/music`,
   `assets/transitions` (GLSL) and `assets/motion-graphics` (Remotion `.jsx` or HyperFrames `.html`), then click

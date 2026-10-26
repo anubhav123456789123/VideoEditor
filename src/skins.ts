@@ -72,7 +72,7 @@ const GRAPHITE: SkinTokens = {
 // Fine-tune L to meet the standard). Pastel accent skin (Mocha/Arctic/Tokyo Night/Latte) onAccent uses dark fonts.
 // Paper / Onyx: monochrome Apple-like skins (white · grey · black). The UI is
 // greyscale; only success/danger keep a hue because they carry meaning, and clip
-// kinds are told apart by tone instead of colour. Paper is the default.
+// kinds are told apart by tone instead of colour. Onyx (dark) is the default.
 const PAPER: SkinTokens = {
   bg: '#f5f5f7', inset: '#ececee', panel: '#ffffff', panelAlt: '#f5f5f7', hover: '#e8e8ed',
   border: '#d2d2d7', borderLight: '#aeaeb2',
@@ -168,7 +168,7 @@ export const SKINS: readonly SkinDef[] = [
 ];
 
 const STORAGE_KEY = 'cc.skin';
-export const DEFAULT_SKIN = 'paper';
+export const DEFAULT_SKIN = 'onyx';
 
 const kebab = (name: string): string => name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 
